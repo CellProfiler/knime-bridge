@@ -50,7 +50,16 @@ public class RunReq extends ZMsg {
 			ImgPlus<?> imgPlus = entry.getValue();
 			assert imgPlus.firstElement() instanceof RealType;
 			String key = entry.getKey();
-			dataChunks.add(serializeImgPlus(key, (ImgPlus)imgPlus, builder ));
+			double [] chunk = serializeImgPlus(key, (ImgPlus)imgPlus, builder );
+			double scaling = 1;
+			int validBits = imgPlus.getValidBits();
+			if (validBits != 0) {
+				scaling = Math.pow(2.0, -validBits);
+			}
+			for (int i=0; i<chunk.length; i++) {
+				chunk[i] *= scaling;
+			}
+			dataChunks.add(chunk);
 		}
 		StringWriter sw = new StringWriter();
 		Json.createWriter(sw).writeArray(builder.build());
@@ -59,10 +68,14 @@ public class RunReq extends ZMsg {
 			 byte[] v = new byte[chunk.length * Double.SIZE / Byte.SIZE];
 			 for (int i=0; i<chunk.length; i++) {
 				 long bits = Double.doubleToLongBits(chunk[i]);
-				 v[i*4] = (byte)(bits);
-				 v[i*4+1] = (byte)(bits >> 8);
-				 v[i*4+2] = (byte)(bits >> 16);
-				 v[i*4+3] = (byte)(bits >> 24);
+				 v[i*8] = (byte)(bits);
+				 v[i*8+1] = (byte)(bits >> 8);
+				 v[i*8+2] = (byte)(bits >> 16);
+				 v[i*8+3] = (byte)(bits >> 24);
+				 v[i*8+4] = (byte)(bits >> 32);
+				 v[i*8+5] = (byte)(bits >> 40);
+				 v[i*8+6] = (byte)(bits >> 48);
+				 v[i*8+7] = (byte)(bits >> 56);
 			 }
 			 add(v);
 		}

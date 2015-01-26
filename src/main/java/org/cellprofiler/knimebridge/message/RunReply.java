@@ -24,7 +24,22 @@ import org.zeromq.ZMsg;
 /**
  * @author Lee Kamentsky
  *
- */
+ * The run-reply is sent following a successful run. The format is a block
+ * of metadata of the form:
+ *     array of double features composed of a two tuple of object name and...
+ *          array of two tuple of feature name and count of instances
+ *     array of float features composed of a two tuple of object name and...
+ *          array of two tuple of feature name and count of instances
+ *     array of integer features composed of a two tuple of object name and...
+ *          array of two tuple of feature name and count of instances
+ *     array of string features composed of a two tuple of object name and...
+ *          array of two tuple of feature name and the length in bytes of each
+ *          UTF-8 encoded string.
+ *          
+ * This is followed by a single frame containing all the data in lowendian form
+ * in the same order as above.
+ *          
+*/
 public class RunReply extends AbstractReply {
 	private final static String msgName = "run-reply-1";
 	private final Map<String, Map<String, double []>> doubleFeatures =
