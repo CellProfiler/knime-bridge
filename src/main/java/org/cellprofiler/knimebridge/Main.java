@@ -7,15 +7,18 @@ import io.scif.services.DatasetIOService;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.CharBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +31,18 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTree;
+import javax.swing.event.TreeExpansionEvent;
+import javax.swing.event.TreeExpansionListener;
+import javax.swing.event.TreeModelListener;
+import javax.swing.event.TreeWillExpandListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.ExpandVetoException;
+import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreePath;
 
 import net.imagej.Dataset;
 import net.imagej.ImgPlus;
@@ -89,6 +102,103 @@ public class Main {
 			Exception e1 = null;
 			try {
 				bridge.run(imageMap);
+				final JDialog dlg = new JDialog(frame);
+				JScrollPane scroller = new JScrollPane();
+
+				final JTree tree = new JTree();
+				dlg.add(scroller, BorderLayout.CENTER);
+				scroller.setViewportView(tree);
+				tree.setModel(new TreeModel() {
+					DefaultMutableTreeNode root;
+					
+					
+					@Override
+					public void valueForPathChanged(TreePath path, Object newValue) {
+					}
+					
+					@Override
+					public void removeTreeModelListener(TreeModelListener l) {
+						
+					}
+					
+					@Override
+					public boolean isLeaf(Object node) {
+						final DefaultMutableTreeNode treeNode = cast(node);
+						return treeNode.getLevel() > 2;
+					}
+					
+					DefaultMutableTreeNode cast(Object node) {
+						assert node instanceof DefaultMutableTreeNode;
+						return (DefaultMutableTreeNode) node;
+					}
+					
+					@Override
+					public Object getRoot() {
+						if (root == null) {
+							root = new DefaultMutableTreeNode("Measurements", true);
+							root.add(new DefaultMutableTreeNode(KBConstants.IMAGE, true));
+							for (String object_name:bridge.getObjectNames()) {
+								root.add(new DefaultMutableTreeNode(object_name, true));
+							}
+						}
+						return root;
+					}
+					
+					@Override
+					public int getIndexOfChild(Object parent, Object child) {
+						DefaultMutableTreeNode tParent = cast(parent);
+						DefaultMutableTreeNode tChild = cast(child);
+						return tParent.getIndex(tChild);
+					}
+					
+					@Override
+					public int getChildCount(Object parent) {
+						DefaultMutableTreeNode tParent = cast(parent);
+						if (tParent.getChildCount() == 0) {
+							switch (tParent.getLevel()) {
+							case 1: 
+								for (IFeatureDescription feature:bridge.getFeatures(tParent.getUserObject().toString())) {
+									tParent.add(new DefaultMutableTreeNode(new FeatureHolder(feature), true));
+								}
+								break;
+								
+							case 2:
+								Object oFeature = tParent.getUserObject();
+								if (oFeature instanceof FeatureHolder) {
+									for (String value: ((FeatureHolder)oFeature).getValues(bridge)) {
+										tParent.add(new DefaultMutableTreeNode(value, true));
+									}
+								}
+								break;
+							default:
+								break;
+							} 
+						}
+						return tParent.getChildCount();
+					}
+					
+					@Override
+					public Object getChild(Object parent, int index) {
+						
+						return cast(parent).getChildAt(index);
+					}
+					
+					@Override
+					public void addTreeModelListener(TreeModelListener l) {
+						// TODO Auto-generated method stub
+						
+					}
+				});
+				JButton button = new JButton(new AbstractAction("OK"){
+
+					@Override
+					public void actionPerformed(ActionEvent arg0) {
+						dlg.setVisible(false);
+						dlg.dispose();
+					}});
+				dlg.add(button, BorderLayout.PAGE_END);
+				dlg.pack();
+				dlg.setVisible(true);
 				return;
 			} catch (ZMQException e) {
 				e.printStackTrace();
@@ -109,6 +219,36 @@ public class Main {
 					JOptionPane.ERROR_MESSAGE);
 		}
 
+	}
+	static class FeatureHolder {
+		final IFeatureDescription feature;
+		FeatureHolder(IFeatureDescription feature) {
+			this.feature = feature;
+		}
+		@Override
+		public String toString() {
+			return this.feature.getName();
+		}
+		public List<String> getValues(IKnimeBridge bridge) {
+			Class <?> featureType = feature.getType();
+			List<String> result = new ArrayList<String>();
+			if (Double.class.isAssignableFrom(featureType)) { 
+				for (double value:bridge.getDoubleMeasurements(feature)) {
+					result.add(Double.toString(value));
+				}
+			} else if (Float.class.isAssignableFrom(featureType)) { 
+				for (float value:bridge.getFloatMeasurements(feature)) {
+					result.add(Float.toString(value));
+				}
+			} else if (Integer.class.isAssignableFrom(featureType)) {
+				for (int value:bridge.getIntMeasurements(feature)) {
+					result.add(Integer.toString(value));
+				}
+			} else if (String.class.isAssignableFrom(featureType)) {
+				result.add(bridge.getStringMeasurement(feature));
+			}
+			return result;
+		}
 	}
 
 	@SuppressWarnings("serial")
@@ -170,19 +310,28 @@ public class Main {
 		    	}
 		    	JList channelList = new JList(mrStupid);
 		    	panel.add(channelList, BorderLayout.NORTH);
-		    	List<String> object_names = bridge.getObjectNames();
+		    	List<String> object_names = new ArrayList<String>(bridge.getObjectNames());
+		    	Collections.sort(object_names);
 		    	List<Object []> features = new ArrayList<Object[]>();
+		    	String imageTitle = "Per-image";
+	    		for (IFeatureDescription fd: bridge.getFeatures(KBConstants.IMAGE)) {
+	    			features.add(new Object [] { imageTitle, fd.getName(), fd.getType().getName() });
+	    			imageTitle = "";
+	    		}
 		    	for (String object_name:object_names) {
 		    		String on = object_name;
-		    		for (IFeatureDescription<?> fd: bridge.getFeatures(object_name)) {
+		    		for (IFeatureDescription fd: bridge.getFeatures(object_name)) {
 		    			features.add(new Object [] { on, fd.getName(), fd.getType().getName() });
 		    			on = "";
 		    		}
 		    	}
+		    	JScrollPane tableScroller = new JScrollPane();
+		    	tableScroller.setMinimumSize(new Dimension(480, 640));
+		    	panel.add(tableScroller, BorderLayout.CENTER);
 		    	JTable table = new JTable(
 		    			features.toArray(new Object [0][]),
 		    			new Object [] {"Segmentation", "Feature", "Data type"});
-		    	panel.add(table, BorderLayout.CENTER);
+		    	tableScroller.getViewport().add(table, BorderLayout.CENTER);
 		    	JButton ok = new JButton(new AbstractAction("OK") {
 
 					@Override
