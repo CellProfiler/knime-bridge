@@ -229,9 +229,9 @@ public class TestKnimeBridge {
 			public void run(IKnimeBridge bridge) {
 				try {
 					bridge.loadPipeline(pipeline);
-					List<IFeatureDescription<?>> features = bridge.getFeatures(null);
+					List<IFeatureDescription> features = bridge.getFeatures(null);
 					assertEquals(features.size(), 2);
-					for (IFeatureDescription<?> feature:features) {
+					for (IFeatureDescription feature:features) {
 						assertEquals(feature.getObjectName(), KBConstants.IMAGE);
 						if (feature.getName().equals("ImageNumber")) {
 							assertEquals(feature.getType(), Integer.class);
@@ -243,7 +243,7 @@ public class TestKnimeBridge {
 					}
 					features = bridge.getFeatures("Nucleus");
 					assertEquals(features.size(), 2);
-					for (IFeatureDescription<?> feature:features) {
+					for (IFeatureDescription feature:features) {
 						assertEquals(feature.getObjectName(), "Nucleus");
 						if (feature.getName().equals("ObjectNumber")) {
 							assertEquals(feature.getType(), Integer.class);
@@ -386,25 +386,25 @@ public class TestKnimeBridge {
 				try {
 					bridge.run(map);
 					double [] doubles = bridge.getDoubleMeasurements(
-							new FeatureDescriptionImpl<Double>("Nuclei", "X", Double.class));
+							new FeatureDescriptionImpl("Nuclei", "X", Double.class));
 					assertEquals(3, doubles.length);
 					assertEquals(doubleValues[3], doubles[0], .0001);
 					assertEquals(doubleValues[4], doubles[1], .0001);
 					assertEquals(doubleValues[5], doubles[2], .0001);
 					float [] floats = bridge.getFloatMeasurements(
-							new FeatureDescriptionImpl<Float>("Cytoplasm", "Y", Float.class));
+							new FeatureDescriptionImpl("Cytoplasm", "Y", Float.class));
 					assertEquals(floatValues[3], floats[0], .0001);
 					assertEquals(floatValues[4], floats[1], .0001);
 					int [] ints = bridge.getIntMeasurements(
-							new FeatureDescriptionImpl<Integer>(KBConstants.IMAGE, "ImageNumber", Integer.class));
+							new FeatureDescriptionImpl(KBConstants.IMAGE, "ImageNumber", Integer.class));
 					assertEquals(intValues[5], ints[0]);
 					ints = bridge.getIntMeasurements(
-							new FeatureDescriptionImpl<Integer>("Nuclei", "ObjectNumber", Integer.class));
+							new FeatureDescriptionImpl("Nuclei", "ObjectNumber", Integer.class));
 					assertEquals(intValues[0], ints[0]);
 					assertEquals(intValues[1], ints[1]);
 					assertEquals(intValues[2], ints[2]);
 					String s = bridge.getStringMeasurement(
-							new FeatureDescriptionImpl<String>(KBConstants.IMAGE, "HackathonComment", String.class));
+							new FeatureDescriptionImpl(KBConstants.IMAGE, "HackathonComment", String.class));
 					assertEquals(stringMeasurement, s);
 					
 				} catch (ZMQException e) {

@@ -47,12 +47,12 @@ public class PipelineInfoReply extends AbstractReply {
 	private static final String msgName = "pipeline-info-reply-1";
 	private List<String> channels;
 	private List<String> objects;
-	private Map<String, List<IFeatureDescription<?>>> objectFeatures;
+	private Map<String, List<IFeatureDescription>> objectFeatures;
 	
 	protected PipelineInfoReply() {
 		
 	}
-	protected void setInfo(List<String> channels, Map<String, List<IFeatureDescription<?>>> objectFeatures) { 
+	protected void setInfo(List<String> channels, Map<String, List<IFeatureDescription>> objectFeatures) { 
 		this.channels = Collections.unmodifiableList(channels);
 		this.objectFeatures = Collections.unmodifiableMap(objectFeatures);
 		final Set<String> objects = new HashSet<String>(objectFeatures.keySet());
@@ -78,14 +78,14 @@ public class PipelineInfoReply extends AbstractReply {
 	 * @param object the name of the segmentation
 	 * @return the per-object features
 	 */
-	public List<IFeatureDescription<?>> getFeatureDescriptions(String object) {
+	public List<IFeatureDescription> getFeatureDescriptions(String object) {
 		return Collections.unmodifiableList(this.objectFeatures.get(object));
 	}
 	
 	/**
 	 * @return the per-image features
 	 */
-	public List<IFeatureDescription<?>> getImageFeatureDescriptions() {
+	public List<IFeatureDescription> getImageFeatureDescriptions() {
 		return getFeatureDescriptions(KBConstants.IMAGE);
 	}
 	
@@ -126,8 +126,8 @@ public class PipelineInfoReply extends AbstractReply {
 				throw new ProtocolException(e.getMessage());
 			}
 		}
-		Map<String, List<IFeatureDescription<?>>> objectFeatures = 
-				new Hashtable<String, List<IFeatureDescription<?>>>();
+		Map<String, List<IFeatureDescription>> objectFeatures = 
+				new Hashtable<String, List<IFeatureDescription>>();
 		final JsonObject sObjectFeatures = wrapper.getJsonObject(2);
 		if (sObjectFeatures == null) {
 			throw new ProtocolException("Pipeline info is missing feature list");
@@ -137,7 +137,7 @@ public class PipelineInfoReply extends AbstractReply {
 			if (ofTuples == null) {
 				throw new ProtocolException(String.format("Segmentation %s is missing its features", key));
 			}
-			List<IFeatureDescription<?>> features = new ArrayList<IFeatureDescription<?>>(ofTuples.size());
+			List<IFeatureDescription> features = new ArrayList<IFeatureDescription>(ofTuples.size());
 			objectFeatures.put(key, features);
 			for (JsonValue v:ofTuples) {
 				if (! (v instanceof JsonArray)) {
@@ -159,10 +159,10 @@ public class PipelineInfoReply extends AbstractReply {
 		setInfo(channels, objectFeatures);
 	}
 
-	private static <T> void addFeature(String key,
-			List<IFeatureDescription<?>> features, final String name,
-			Class<T> type) {
-		features.add(new FeatureDescriptionImpl<T>(key, name, type));
+	private static void addFeature(String key,
+			List<IFeatureDescription> features, final String name,
+			Class<?> type) {
+		features.add(new FeatureDescriptionImpl(key, name, type));
 	}
 
 	@Override

@@ -7,12 +7,12 @@ package org.cellprofiler.knimebridge;
  * @author Lee Kamentsky
  *
  */
-public class FeatureDescriptionImpl<T> implements IFeatureDescription<T> {
+public class FeatureDescriptionImpl implements IFeatureDescription {
 	final String objectName;
 	final String name;
-	final Class<T> type;
+	final Class<?> type;
 	
-	public FeatureDescriptionImpl(String objectName, String name, Class<T> type) {
+	public FeatureDescriptionImpl(String objectName, String name, Class<?> type) {
 		this.objectName = objectName;
 		this.name = name;
 		this.type = type;
@@ -28,7 +28,7 @@ public class FeatureDescriptionImpl<T> implements IFeatureDescription<T> {
 	}
 
 	@Override
-	public Class<T> getType() {
+	public Class<?> getType() {
 		return type;
 	}
 }

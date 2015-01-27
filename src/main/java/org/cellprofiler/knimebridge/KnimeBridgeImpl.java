@@ -83,7 +83,7 @@ class KnimeBridgeImpl implements IKnimeBridge {
 	 * @see org.cellprofiler.knimebridge.IKnimeBridge#getFeatures(java.lang.String)
 	 */
 	@Override
-	public List<IFeatureDescription<?>> getFeatures(String objectName)
+	public List<IFeatureDescription> getFeatures(String objectName)
 			throws ZMQException {
 		if (objectName == null) return piReply.getImageFeatureDescriptions();
 		return piReply.getFeatureDescriptions(objectName);
@@ -103,22 +103,22 @@ class KnimeBridgeImpl implements IKnimeBridge {
 	 * @see org.cellprofiler.knimebridge.IKnimeBridge#getMeasurements(org.cellprofiler.knimebridge.IFeatureDescription)
 	 */
 	@Override
-	public String getStringMeasurement(IFeatureDescription<String> feature) {
+	public String getStringMeasurement(IFeatureDescription feature) {
 		return runReply.getStringMeasurement(feature.getObjectName(), feature.getName());
 	}
 
 	@Override
-	public int[] getIntMeasurements(IFeatureDescription<Integer> feature) {
+	public int[] getIntMeasurements(IFeatureDescription feature) {
 		return runReply.getIntMeasurements(feature.getObjectName(), feature.getName());
 	}
 
 	@Override
-	public double[] getDoubleMeasurements(IFeatureDescription<Double> feature) {
+	public double[] getDoubleMeasurements(IFeatureDescription feature) {
 		return runReply.getDoubleMeasurements(feature.getObjectName(), feature.getName());
 	}
 
 	@Override
-	public float[] getFloatMeasurements(IFeatureDescription<Float> feature) {
+	public float[] getFloatMeasurements(IFeatureDescription feature) {
 		return runReply.getFloatMeasurements(feature.getObjectName(), feature.getName());
 	}
 

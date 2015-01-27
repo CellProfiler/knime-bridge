@@ -13,6 +13,7 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
 
 import net.imagej.ImgPlus;
+import net.imglib2.type.numeric.IntegerType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.ImgUtil;
 
@@ -49,12 +50,15 @@ public class RunReq extends ZMsg {
 		for (Map.Entry<String, ImgPlus<?>> entry:imageMap.entrySet()) {
 			ImgPlus<?> imgPlus = entry.getValue();
 			assert imgPlus.firstElement() instanceof RealType;
+			RealType<?> firstElement = (RealType)(imgPlus.firstElement());
 			String key = entry.getKey();
 			double [] chunk = serializeImgPlus(key, (ImgPlus)imgPlus, builder );
 			double scaling = 1;
-			int validBits = imgPlus.getValidBits();
-			if (validBits != 0) {
-				scaling = Math.pow(2.0, -validBits);
+			if (firstElement instanceof IntegerType) {
+				int validBits = imgPlus.getValidBits();
+				if (validBits != 0) {
+					scaling = Math.pow(2.0, -validBits);
+				}
 			}
 			for (int i=0; i<chunk.length; i++) {
 				chunk[i] *= scaling;

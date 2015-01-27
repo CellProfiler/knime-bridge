@@ -49,7 +49,7 @@ public interface IKnimeBridge {
 	 * @param objectName the name of the segmentation or null for the image features
 	 * @return one feature description per feature
 	 */
-	public List<IFeatureDescription<?>> getFeatures(String objectName) throws ZMQException;
+	public List<IFeatureDescription> getFeatures(String objectName) throws ZMQException;
 	
 	/**
 	 * Run one cycle of the pipeline
@@ -66,15 +66,15 @@ public interface IKnimeBridge {
 	 * @param feature
 	 * @return
 	 */
-	public int [] getIntMeasurements(IFeatureDescription<Integer> feature);
+	public int [] getIntMeasurements(IFeatureDescription feature);
 	/**
 	 * If the feature description is of type Double, return result as array of doubles
 	 * @param feature
 	 * @return
 	 */
-	public double [] getDoubleMeasurements(IFeatureDescription<Double> feature);
+	public double [] getDoubleMeasurements(IFeatureDescription feature);
 	
-	public float [] getFloatMeasurements(IFeatureDescription<Float> feature);
+	public float [] getFloatMeasurements(IFeatureDescription feature);
 	
-	String getStringMeasurement(IFeatureDescription<String> feature);
+	String getStringMeasurement(IFeatureDescription feature);
 }
