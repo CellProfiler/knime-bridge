@@ -1,15 +1,18 @@
+/*
+ * Copyright (c) 2015, Broad Institute
+ * All rights reserved.
+ *
+ * Published under a BSD license, see LICENSE for details
+ */
 package org.cellprofiler.knimebridge.message;
 
 import java.io.StringReader;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Map;
 
 import javax.json.Json;
 import javax.json.JsonArray;
-import javax.json.JsonNumber;
-import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonValue;
 
@@ -18,7 +21,6 @@ import org.cellprofiler.knimebridge.KBConstants;
 import org.cellprofiler.knimebridge.PipelineException;
 import org.cellprofiler.knimebridge.ProtocolException;
 import org.zeromq.ZFrame;
-import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
 
 /**
@@ -54,6 +56,7 @@ public class RunReply extends AbstractReply {
 	protected String getMsgName() {
 		return msgName;
 	}
+	@Override
 	protected void parse(ZMsg msg) throws CellProfilerException, PipelineException, ProtocolException {
 		String featureMetadata = msg.popString();
 		JsonReader rdr = Json.createReader(new StringReader(featureMetadata));
@@ -75,17 +78,51 @@ public class RunReply extends AbstractReply {
 		offset = parseFeatures(wrapper.getJsonArray(3), data, offset, new ByteHacker(), new ByteToStringAdapter(), stringFeatures);
 		
 	}
+	/**
+	 * @author Lee Kamentsky
+	 *
+	 * An array hacker converts byte data into an
+	 * array of ints, floats or doubles.
+	 * 
+	 * @param <T> the type of the output array, e.g. double []
+	 */
 	private interface ArrayHacker<T> {
 		void check(byte [] data, int offset, int length) throws ProtocolException;
 		T allocate(int length);
 		int hack(byte [] data, int offset, T container);
 	}
+	/**
+	 * @author Lee Kamentsky
+	 *
+	 * An adapter that converts an array into another type,
+	 * for instance a String.
+	 * 
+	 * @param <T>
+	 * @param <U>
+	 */
 	private interface ArrayAdapter<T, U> {
+		/**
+		 * Convert an array of type T to an object of type U
+		 * @param array array to be converted
+		 * @return an object, built out of the array data.
+		 */
 		U convert(T array);
 	}
+	/**
+	 * @author Lee Kamentsky
+	 *
+	 * A pass-through adapter that does nothing.
+	 * 
+	 * @param <T> the input and output type
+	 */
 	private static class IdentityAdapter<T> implements ArrayAdapter<T, T> {
 		public T convert(T array) { return array; }
 	}
+	/**
+	 * @author Lee Kamentsky
+	 *
+	 * A hacker that converts bytes to doubles.
+	 */
 	private static class DoubleHacker implements ArrayHacker<double []> {
 
 		@Override
@@ -114,6 +151,11 @@ public class RunReply extends AbstractReply {
 		
 	}
 	
+	/**
+	 * @author Lee Kamentsky
+	 *
+	 * A hacker that converts bytes to floats
+	 */
 	private static class FloatHacker implements ArrayHacker<float []> {
 
 		@Override
@@ -141,6 +183,11 @@ public class RunReply extends AbstractReply {
 		}
 		
 	}
+	/**
+	 * @author Lee Kamentsky
+	 *
+	 * A hacker that converts lowendian bytes to integers
+	 */
 	private static class IntHacker implements ArrayHacker<int []> {
 		@Override
 		public int hack(byte[] data, int offset, int[] doubleData) {
@@ -167,6 +214,11 @@ public class RunReply extends AbstractReply {
 		}
 		
 	}
+	/**
+	 * @author Lee Kamentsky
+	 *
+	 * A pass-through hacker that eats bytes.
+	 */
 	private static class ByteHacker implements ArrayHacker<byte []> {
 		@Override
 		public int hack(byte[] data, int offset, byte [] buf) {
@@ -189,6 +241,12 @@ public class RunReply extends AbstractReply {
 		}
 		
 	}
+	/**
+	 * @author Lee Kamentsky
+	 *
+	 * An adapter that converts an array of bytes to a string
+	 * using UTF-8 encoding.
+	 */
 	private static class ByteToStringAdapter implements ArrayAdapter<byte[], String> {
 		static final Charset charset = Charset.forName("UTF-8");
 		public String convert(byte[] buffer) {
@@ -196,10 +254,26 @@ public class RunReply extends AbstractReply {
 		}
 	}
 	/**
-	 * @param rdr
-	 * @param data
-	 * @param offset
-	 * @throws ProtocolException
+	 * Parse the features from Json describing their
+	 * layout in the byte array
+	 * 
+	 * @param metadata a Json array of two tuples of object name
+	 *                 and an array of two tuples of feature name
+	 *                 and # of elements to eat from the data array
+	 * @param data the data array containing the measurement data
+	 * @param offset the offset to the first measurement to parse out of the data
+	 * @param hacker a hacker that will produce an array of type T
+	 * @param adapter an adapter that will produce an object of type U
+	 *                given a data array of type T
+	 * @param dest a map of object name to a map of feature name and
+	 *        measurement data. This map will be populated with the
+	 *        parsed measurement data.
+	 *       
+	 * @return the offset to the first byte after the parsed data
+	 *         in the data array
+	 *         
+	 * @throws ProtocolException if the Json was not correctly parsed
+	 *                           or if there was a buffer overrun.
 	 */
 	private <T, U> int parseFeatures(JsonArray metadata, byte[] data, int offset, ArrayHacker<T> hacker,
 			ArrayAdapter<T, U> adapter,
@@ -230,21 +304,51 @@ public class RunReply extends AbstractReply {
 		}
 		return offset;
 	}
+	/**
+	 * Get a string measurement from the parsed data
+	 * 
+	 * @param objectName the name of the segmentation
+	 *                   or "Image" or null to get a
+	 *                   image-wide string measurement
+	 * @param name the name of the feature
+	 * @return the string value of the measurement
+	 */
 	public String getStringMeasurement(String objectName, String name) {
 		if (objectName == null) objectName = KBConstants.IMAGE;
 		if (! stringFeatures.containsKey(objectName)) return null;
 		return stringFeatures.get(objectName).get(name);
 	}
+	/**
+	 * Get integer measurements from the parsed data
+	 * 
+	 * @param objectName the name of the segmentation (or "Image" or null)
+	 * @param name the name of the feature
+	 * @return an array of integer values for each segmented object
+	 */
 	public int[] getIntMeasurements(String objectName, String name) {
 		if (objectName == null) objectName = KBConstants.IMAGE;
 		if (! intFeatures.containsKey(objectName)) return null;
 		return intFeatures.get(objectName).get(name);
 	}
+	/**
+	 * Get float measurements from the parsed data
+	 * 
+	 * @param objectName the name of the segmentation (or "Image" or null)
+	 * @param name the name of the feature
+	 * @return an array of float values for each segmented object
+	 */
 	public float[] getFloatMeasurements(String objectName, String name) {
 		if (objectName == null) objectName = KBConstants.IMAGE;
 		if (! floatFeatures.containsKey(objectName)) return null;
 		return floatFeatures.get(objectName).get(name);
 	}
+	/**
+	 * Get double measurements from the parsed data
+	 * 
+	 * @param objectName the name of the segmentation (or "Image" or null)
+	 * @param name the name of the feature
+	 * @return an array of float values for each segmented object
+	 */
 	public double[] getDoubleMeasurements(String objectName, String name) {
 		if (objectName == null) objectName = KBConstants.IMAGE;
 		if (! floatFeatures.containsKey(objectName)) return null;

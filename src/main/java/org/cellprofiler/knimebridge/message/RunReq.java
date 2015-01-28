@@ -1,16 +1,17 @@
+/*
+ * Copyright (c) 2015, Broad Institute
+ * All rights reserved.
+ *
+ * Published under a BSD license, see LICENSE for details
+ */
 package org.cellprofiler.knimebridge.message;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.io.StringWriter;
-import java.nio.DoubleBuffer;
 import java.util.ArrayList;
 import java.util.Map;
 
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
-import javax.json.JsonObjectBuilder;
 
 import net.imagej.ImgPlus;
 import net.imglib2.type.numeric.IntegerType;
@@ -38,10 +39,19 @@ import org.zeromq.ZMsg;
  *          order they appear above. The data are doubles in little-endian
  *          format, organized by the strides.  
  */
+@SuppressWarnings("deprecation")
 public class RunReq extends ZMsg {
 	private static final String msgName = "run-request-1";
 	
-	@SuppressWarnings("unchecked")
+	/**
+	 * Construct a run request message
+	 * 
+	 * @param sessionID the session ID from connect
+	 * @param pipeline the pipeline to run
+	 * @param imageMap a map of channel name to imgPlus containing the image
+	 *                 to use as input for that channel.
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	protected RunReq(String sessionID, String pipeline, Map<String, ImgPlus<?>> imageMap) {
 		add(msgName);
 		add(pipeline);
@@ -115,6 +125,24 @@ public class RunReq extends ZMsg {
 		ImgUtil.copy(imgPlus.getImg(), data, 0, strides);
 		return data;
 	}
+	/**
+	 * Send a request to run a pipeline to the server,
+	 * receiving a reply containing the computed
+	 * measurements.
+	 * 
+	 * @param socket communicate over this socket
+	 * @param sessionID the session ID from the connect request
+	 * @param pipeline the pipeline to run
+	 * @param imageMap a map of channel name to the image that
+	 *                 should be used as input to CellProfiler
+	 *                 for that channel.
+	 * @return a RunReply containing the computed measurements
+	 * @throws CellProfilerException if CellProfiler encountered a problem
+	 *                 during the course of running the pipeline.
+	 * @throws PipelineException if the pipeline could not be parsed
+	 * @throws ProtocolException if there was a communication problem
+	 *                 between the client and server.
+	 */
 	static public RunReply run(
 			Socket socket, String sessionID, 
 			String pipeline, Map<String, ImgPlus<?>> imageMap) throws CellProfilerException, PipelineException, ProtocolException {

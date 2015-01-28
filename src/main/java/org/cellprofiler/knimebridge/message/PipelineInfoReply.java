@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2015, Broad Institute
+ * All rights reserved.
+ *
+ * Published under a BSD license, see LICENSE for details
+ */
 package org.cellprofiler.knimebridge.message;
 
 import java.io.StringReader;
@@ -52,6 +58,12 @@ public class PipelineInfoReply extends AbstractReply {
 	protected PipelineInfoReply() {
 		
 	}
+	/**
+	 * Install the information retrieved from the server
+	 * 
+	 * @param channels the names of the image inputs to the pipeline
+	 * @param objectFeatures a map of object name to feature produced
+	 */
 	protected void setInfo(List<String> channels, Map<String, List<IFeatureDescription>> objectFeatures) { 
 		this.channels = Collections.unmodifiableList(channels);
 		this.objectFeatures = Collections.unmodifiableMap(objectFeatures);
@@ -89,12 +101,21 @@ public class PipelineInfoReply extends AbstractReply {
 		return getFeatureDescriptions(KBConstants.IMAGE);
 	}
 	
+	/**
+	 * Receive a reply to a PipelineInfoReq
+	 * 
+	 * @param socket read the reply message on this socket
+	 * @return a PipelineInfoReply containing the inputs and outputs of the pipeline
+	 * 
+	 * @throws ProtocolException if the client could not understand the server
+	 * @throws PipelineException if the pipeline could not be loaded
+	 */
 	public static PipelineInfoReply recvReply(Socket socket) throws ProtocolException, PipelineException {
 		PipelineInfoReply reply = new PipelineInfoReply();
 		reply.recvNoCPException(socket);
 		return reply;
 	}
-	
+	@Override
 	protected void parse(ZMsg reply) throws ProtocolException {
 		final String body = reply.popString();
 		if (body == null) {

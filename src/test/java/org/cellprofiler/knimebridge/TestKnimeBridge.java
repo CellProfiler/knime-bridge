@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2015, Broad Institute
+ * All rights reserved.
+ *
+ * Published under a BSD license, see LICENSE for details
+ */
 package org.cellprofiler.knimebridge;
 
 import static org.junit.Assert.*;
@@ -15,15 +21,12 @@ import java.util.concurrent.Future;
 
 import javax.json.Json;
 import javax.json.JsonArray;
-import javax.json.JsonString;
 import javax.json.JsonWriter;
-import javax.json.JsonWriterFactory;
 
 import net.imagej.ImgPlus;
 import net.imagej.axis.Axes;
 import net.imglib2.Cursor;
 import net.imglib2.img.Img;
-import net.imglib2.img.ImgFactory;
 import net.imglib2.img.planar.PlanarImgFactory;
 import net.imglib2.type.numeric.real.DoubleType;
 
@@ -35,6 +38,7 @@ import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMQException;
 import org.zeromq.ZMsg;
 
+@SuppressWarnings("deprecation")
 public class TestKnimeBridge {
 
 	@Test

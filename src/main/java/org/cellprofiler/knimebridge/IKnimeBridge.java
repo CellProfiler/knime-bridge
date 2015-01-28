@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2015, Broad Institute
+ * All rights reserved.
+ *
+ * Published under a BSD license, see LICENSE for details
+ */
 package org.cellprofiler.knimebridge;
 
 import java.net.URI;
@@ -15,6 +21,7 @@ import net.imagej.ImgPlus;
  * @author Lee Kamentsky
  *
  */
+@SuppressWarnings("deprecation")
 public interface IKnimeBridge {
 	/**
 	 * Establish a CellProfiler/Knime bridge context
@@ -74,7 +81,22 @@ public interface IKnimeBridge {
 	 */
 	public double [] getDoubleMeasurements(IFeatureDescription feature);
 	
+	/**
+	 * If the feature description is of type Float, return result
+	 * as an array of floats.
+	 * 
+	 * @param feature
+	 * @return
+	 */
 	public float [] getFloatMeasurements(IFeatureDescription feature);
 	
-	String getStringMeasurement(IFeatureDescription feature);
+	/**
+	 * If the feature description is of type String, there
+	 * will be just a single string returned, for instance
+	 * some image-wide metadata.
+	 * 
+	 * @param feature
+	 * @return
+	 */
+	public String getStringMeasurement(IFeatureDescription feature);
 }

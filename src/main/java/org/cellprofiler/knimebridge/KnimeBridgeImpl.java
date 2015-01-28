@@ -1,5 +1,8 @@
-/**
- * 
+/*
+ * Copyright (c) 2015, Broad Institute
+ * All rights reserved.
+ *
+ * Published under a BSD license, see LICENSE for details
  */
 package org.cellprofiler.knimebridge;
 
@@ -22,6 +25,9 @@ import org.zeromq.ZMQException;
 
 /**
  * @author Lee Kamentsky
+ * 
+ * The top-level of the ZMQ protocol-driven
+ * Knime bridge.
  *
  */
 class KnimeBridgeImpl implements IKnimeBridge {
@@ -33,6 +39,10 @@ class KnimeBridgeImpl implements IKnimeBridge {
 	private PipelineInfoReply piReply;
 	private RunReply runReply;
 	
+	/**
+	 * @return the ZMQ context that should be used
+	 *         throughout this process.
+	 */
 	public static Context theContext() { return context; }
 
 	/* (non-Javadoc)

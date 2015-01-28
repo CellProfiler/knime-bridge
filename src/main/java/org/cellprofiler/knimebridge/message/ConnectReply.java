@@ -1,7 +1,11 @@
+/*
+ * Copyright (c) 2015, Broad Institute
+ * All rights reserved.
+ *
+ * Published under a BSD license, see LICENSE for details
+ */
 package org.cellprofiler.knimebridge.message;
 
-import org.cellprofiler.knimebridge.CellProfilerException;
-import org.cellprofiler.knimebridge.PipelineException;
 import org.cellprofiler.knimebridge.ProtocolException;
 import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
@@ -16,6 +20,13 @@ public class ConnectReply extends AbstractReply {
 	static final private String msgName = "connect-reply-1";
 	protected ConnectReply() {
 	}
+	/**
+	 * Receive a connect reply on the socket
+	 * 
+	 * @param socket
+	 * @return
+	 * @throws ProtocolException
+	 */
 	static ConnectReply recvConnectReply(Socket socket) throws ProtocolException {
 		final ConnectReply reply = new ConnectReply();
 		reply.recvNoException(socket);

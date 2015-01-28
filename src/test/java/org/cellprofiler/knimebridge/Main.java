@@ -1,9 +1,14 @@
+/*
+ * Copyright (c) 2015, Broad Institute
+ * All rights reserved.
+ *
+ * Published under a BSD license, see LICENSE for details
+ */
 package org.cellprofiler.knimebridge;
 
 import io.scif.SCIFIO;
 import io.scif.img.ImgIOException;
 import io.scif.img.ImgOpener;
-import io.scif.services.DatasetIOService;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
@@ -13,10 +18,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
@@ -24,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 
 import javax.swing.AbstractAction;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
@@ -34,17 +36,12 @@ import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTree;
-import javax.swing.event.TreeExpansionEvent;
-import javax.swing.event.TreeExpansionListener;
 import javax.swing.event.TreeModelListener;
-import javax.swing.event.TreeWillExpandListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.ExpandVetoException;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 
-import net.imagej.Dataset;
 import net.imagej.ImgPlus;
 
 import org.zeromq.ZMQException;
@@ -55,6 +52,7 @@ import org.zeromq.ZMQException;
  * @author Lee Kamentsky
  *
  */
+@SuppressWarnings("deprecation")
 public class Main {
 	static public final SCIFIO scifio = new SCIFIO();
 
@@ -185,8 +183,6 @@ public class Main {
 					
 					@Override
 					public void addTreeModelListener(TreeModelListener l) {
-						// TODO Auto-generated method stub
-						
 					}
 				});
 				JButton button = new JButton(new AbstractAction("OK"){
@@ -274,14 +270,18 @@ public class Main {
 		    	try {
 		    		final File file = chooser.getSelectedFile();
 			    	FileReader rdr = new FileReader(file);
-			    	StringBuilder sb = new StringBuilder();
-			    	char [] buffer = new char [1000];
-			    	while (true) {
-			    		final int nRead = rdr.read(buffer);
-			    		if (nRead < 0) break;
-			    		sb.append(buffer, 0, nRead);
+			    	try {
+				    	StringBuilder sb = new StringBuilder();
+				    	char [] buffer = new char [1000];
+				    	while (true) {
+				    		final int nRead = rdr.read(buffer);
+				    		if (nRead < 0) break;
+				    		sb.append(buffer, 0, nRead);
+				    	}
+				    	bridge.loadPipeline(sb.toString());
+			    	} finally {
+			    		rdr.close();
 			    	}
-			    	bridge.loadPipeline(sb.toString());
 		    	} catch (ProtocolException e) {
 			    	e.printStackTrace();
 			    	return;
@@ -300,7 +300,6 @@ public class Main {
 				}
 		    	final JDialog dlg = new JDialog(frame, "Pipeline stats");
 		    	Container panel = dlg.getContentPane();
-		    	BoxLayout layout = new BoxLayout(panel, BoxLayout.Y_AXIS);
 		    	List<String> channels = bridge.getInputChannels();
 		    	Object [] mrStupid = new Object[channels.size()];
 		    	int idx = 0;
@@ -367,7 +366,6 @@ public class Main {
 		}		
 		final JFrame frame = new JFrame();
 		Container panel = frame.getContentPane();
-		BoxLayout layout = new javax.swing.BoxLayout(panel, BoxLayout.X_AXIS);
 		JButton load_pipeline_button = new JButton(new LoadPipelineAction("Load pipeline", frame, bridge));
 		panel.add(load_pipeline_button, BorderLayout.LINE_START);
 		JButton run_pipeline_button = new JButton(new RunAction("Run", frame, bridge));

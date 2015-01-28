@@ -1,7 +1,6 @@
 package org.cellprofiler.imagej;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -10,12 +9,9 @@ import java.util.TreeSet;
 
 import net.imagej.Dataset;
 import net.imagej.ImgPlus;
-import net.imagej.table.Column;
 import net.imagej.table.DefaultResultsTable;
 import net.imagej.table.DoubleColumn;
-import net.imagej.table.GenericTable;
 import net.imagej.table.ResultsTable;
-import net.imagej.table.Table;
 
 import org.cellprofiler.knimebridge.CellProfilerException;
 import org.cellprofiler.knimebridge.IFeatureDescription;
@@ -23,11 +19,8 @@ import org.cellprofiler.knimebridge.IKnimeBridge;
 import org.cellprofiler.knimebridge.KBConstants;
 import org.cellprofiler.knimebridge.PipelineException;
 import org.cellprofiler.knimebridge.ProtocolException;
-import org.scijava.ItemIO;
 import org.scijava.log.LogService;
 import org.scijava.module.DefaultMutableModule;
-import org.scijava.module.DefaultMutableModuleInfo;
-import org.scijava.module.DefaultMutableModuleItem;
 import org.scijava.module.ModuleInfo;
 import org.scijava.module.ModuleItem;
 import org.scijava.plugin.Parameter;
@@ -38,8 +31,18 @@ import org.zeromq.ZMQException;
 /**
  * @author Lee Kamentsky
  *
- * A pipeline module.
+ * A pipeline module. The module communicates with a running
+ * CellProfiler instance via the Knime bridge. You can get
+ * a pipeline module programatically via the CellProfilerService
+ * or you can run a pipeline on one image set using the
+ * RunPipeline plugin.
+ * 
+ * The input parameters to the pipeline are 2d or color images.
+ * The output parameters are the pipeline that was used
+ * and tables for image-wide measurements and per-object
+ * measurements.
  */
+@SuppressWarnings("deprecation")
 public class PipelineModule extends DefaultMutableModule {
 	@Parameter
 	private LogService logService;
@@ -52,7 +55,7 @@ public class PipelineModule extends DefaultMutableModule {
 	final static private String DESCRIPTION = 
 			"A CellProfiler pipeline plugin runs a single cycle of a CellProfiler pipeline. " +
 			"The user supplies the images needed to run the pipeline and the pipeline " +
-			"returns all of the measurements that the pipeline producles on output.";
+			"returns all of the measurements that the pipeline produces on output.";
 	final private IKnimeBridge bridge;
 	final private String pipeline;
 	final private Map<String, ModuleItem<Dataset>> channelInputs = 
@@ -60,12 +63,35 @@ public class PipelineModule extends DefaultMutableModule {
 	final private Map<String, ModuleItem<ResultsTable>> tables;
 	final private TreeSet<FeatureStuffer> features;
 	
+	/**
+	 * Construct the pipeline from a connected Knime bridge
+	 * (bridge.connect() must have been called previously)
+	 * and the text of a pipeline.
+	 * 
+	 * PipelineModule.init() must be called to complete
+	 * the initialization process and configure the inputs and outputs.
+	 * 
+	 * @param bridge Knime bridge connected to CellProfiler
+	 * @param pipeline the contents of a pipeline file
+	 */
 	protected PipelineModule(IKnimeBridge bridge, String pipeline) {
 		this.bridge = bridge;
 		this.pipeline = pipeline;
 		this.tables = new Hashtable<String, ModuleItem<ResultsTable>>();
 		this.features = new TreeSet<FeatureStuffer>();
 	}
+	/**
+	 * init uploads the pipeline for the first time to CellProfiler
+	 * which parses it and reports back with the channels (= 2d images)
+	 * that will be needed for input and the measurements which
+	 * CellProfiler will output.
+	 * 
+	 * @throws ZMQException on low-level communications failure
+	 * @throws PipelineException if the pipeline could not be parsed
+	 * @throws ProtocolException if the client or server side
+	 *             of the bridge could not parse the protocol,
+	 *             possibly because of unsupported versions.
+	 */
 	protected void init() throws ZMQException, PipelineException, ProtocolException {
 		bridge.loadPipeline(pipeline);
 		ModuleInfo info = getInfo();
@@ -77,6 +103,7 @@ public class PipelineModule extends DefaultMutableModule {
 		for (String channel:bridge.getInputChannels()) {
 			final ModuleItem<Dataset> input = addInput(
 					channelNameToInputName(channel), Dataset.class);
+			input.setLabel(String.format("%s channel", channel));
 			input.setDescription(String.format("Input image for channel %s", channel));
 			channelInputs.put(channel, input);
 		}
@@ -84,11 +111,16 @@ public class PipelineModule extends DefaultMutableModule {
 		objectNames.add(KBConstants.IMAGE);
 		for (String objectName:objectNames) {
 			for (IFeatureDescription feature:bridge.getFeatures(objectName)) {
-				String name = feature.getName();
 				if (feature.getType().equals(String.class)) continue;
 				if (!tables.containsKey(objectName)) {
 					ModuleItem<ResultsTable> output = 
 							addOutput(tableNameToInputName(objectName), ResultsTable.class);
+					output.setLabel(objectName);
+					if (objectName.equals(KBConstants.IMAGE))
+						output.setDescription("This table contains all numeric image-wide measurements.");
+					else
+						output.setDescription(
+								"Measurements calculated on the %s objects. See CellProfiler documentation for their descriptions");
 					tables.put(objectName, output);
 				}
 				if (feature.getType().equals(Double.class)) {
@@ -125,10 +157,22 @@ public class PipelineModule extends DefaultMutableModule {
 			stuffit.add();
 		}
 	}
+	/**
+	 * Make a unique name for the channel input parameter
+	 * 
+	 * @param channel
+	 * @return
+	 */
 	private static String channelNameToInputName(String channel) {
 		return channel + "_"+ CHANNEL_SUFFIX;
 	}
 	
+	/**
+	 * Make a unique name for the table output parameter
+	 * 
+	 * @param object_name
+	 * @return
+	 */
 	private static String tableNameToInputName(String object_name) {
 		return object_name + "_"+ TABLE_SUFFIX;
 	}
@@ -150,12 +194,27 @@ public class PipelineModule extends DefaultMutableModule {
 		module.init();
 		return module;
 	}
+	/**
+	 * Display and log an error
+	 * 
+	 * @param message
+	 * @param e
+	 */
 	private void error(String message, Throwable e) {
 		logService.error(message, e);
 		if (uiService != null) {
 			uiService.showDialog(message, "Failed to run CellProfiler pipeline", MessageType.ERROR_MESSAGE);
 		}
 	}
+	/**
+	 * @author Lee Kamentsky
+	 *
+	 * The FeatureStuffer is a class that can
+	 * stuff the measurements for a feature into
+	 * a table. It implements the Comparable interface
+	 * so that a collection of feature stuffers
+	 * can be sorted into alphabetical order.
+	 */
 	abstract protected class FeatureStuffer implements Comparable<FeatureStuffer> {
 		final protected IFeatureDescription feature;
 		FeatureStuffer(IFeatureDescription feature) {
@@ -175,8 +234,11 @@ public class PipelineModule extends DefaultMutableModule {
 			return result;
 		}
 		/**
-		 * @param length 
-		 * @return
+		 * Add a column for this feature to the appropriate table
+		 * 
+		 * @param length the # of measurements made on this object
+		 *        during the run 
+		 * @return the column that was created.
 		 */
 		protected DoubleColumn addColumn(int length) {
 			final ModuleItem<ResultsTable> moduleItem = tables.get(feature.getObjectName());
@@ -191,10 +253,16 @@ public class PipelineModule extends DefaultMutableModule {
 		}
 		abstract void add();
 	}
+	/**
+	 * @author Lee Kamentsky
+	 *
+	 * A feature stuffer for integer values
+	 */
 	protected class IntFeatureStuffer extends FeatureStuffer {
 		IntFeatureStuffer(IFeatureDescription feature) {
 			super(feature);
 		}
+		@Override
 		void add() {
 			int [] results = bridge.getIntMeasurements(feature);
 			DoubleColumn column = addColumn(results.length);
@@ -202,10 +270,16 @@ public class PipelineModule extends DefaultMutableModule {
 				column.setValue(i, results[i]);
 		}
 	}
+	/**
+	 * @author Lee Kamentsky
+	 *
+	 * A feature stuffer for float values
+	 */
 	protected class FloatFeatureStuffer extends FeatureStuffer {
 		FloatFeatureStuffer(IFeatureDescription feature) {
 			super(feature);
 		}
+		@Override
 		void add() {
 			float [] results = bridge.getFloatMeasurements(feature);
 			DoubleColumn column = addColumn(results.length);
@@ -213,10 +287,16 @@ public class PipelineModule extends DefaultMutableModule {
 				column.addValue(results[i]);
 		}
 	}
+	/**
+	 * @author Lee Kamentsky
+	 *
+	 * A feature stuffer for double values
+	 */
 	protected class DoubleFeatureStuffer extends FeatureStuffer {
 		DoubleFeatureStuffer(IFeatureDescription feature) {
 			super(feature);
 		}
+		@Override
 		void add() {
 			double [] results = bridge.getDoubleMeasurements(feature);
 			DoubleColumn column = addColumn(results.length);

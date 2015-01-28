@@ -1,5 +1,8 @@
-/**
- * 
+/*
+ * Copyright (c) 2015, Broad Institute
+ * All rights reserved.
+ *
+ * Published under a BSD license, see LICENSE for details
  */
 package org.cellprofiler.imagej;
 

@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2015, Broad Institute
+ * All rights reserved.
+ *
+ * Published under a BSD license, see LICENSE for details
+ */
 package org.cellprofiler.knimebridge.message;
 
 import java.util.UUID;
@@ -21,6 +27,14 @@ public class ConnectReq extends ZMsg {
 		add(msgName);
 		wrap(new ZFrame(sessionID));
 	}
+	/**
+	 * Connect to CellProfiler
+	 * 
+	 * @param socket the socket to use to send and receive messages
+	 * 
+	 * @return the session ID that should be used to communicate
+	 * @throws ProtocolException if the server's response could not be parsed
+	 */
 	static public String connect(Socket socket) throws ProtocolException {
 		ConnectReq req = new ConnectReq();
 		if (! req.send(socket)) {
