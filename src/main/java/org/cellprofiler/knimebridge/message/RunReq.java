@@ -53,7 +53,7 @@ public class RunReq extends ZMsg {
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	protected RunReq(String sessionID, String pipeline, Map<String, ImgPlus<?>> imageMap) {
-		add(msgName);
+		add(getMessageName());
 		add(pipeline);
 		JsonArrayBuilder builder = Json.createArrayBuilder();
 		ArrayList<double []> dataChunks = new ArrayList<double []>();
@@ -124,6 +124,13 @@ public class RunReq extends ZMsg {
 		builder.add(Json.createArrayBuilder().add(channel).add(aBuilder).build());
 		ImgUtil.copy(imgPlus.getImg(), data, 0, strides);
 		return data;
+	}
+	/**
+	 * @return the name that indicates that this
+	 * is a run request
+	 */
+	public String getMessageName() {
+		return msgName;
 	}
 	/**
 	 * Send a request to run a pipeline to the server,

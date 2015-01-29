@@ -8,6 +8,7 @@ package org.cellprofiler.knimebridge;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -34,12 +35,11 @@ public class MockClientServerPair {
 	private final SynchronousQueue<Runnable> clientQueue = new SynchronousQueue<Runnable>();
 	private final Thread serverThread;
 	private final Thread clientThread;
-	private final String [] addr = { null };
+	private final String addr = "inproc:" + UUID.randomUUID().toString();
 	public String error = null;
 	public String sessionID;
 	public MockClientServerPair() {
 		final Context context = KnimeBridgeImpl.theContext();
-		final SynchronousQueue<Integer> portQueue = new SynchronousQueue<Integer>();
 		final SynchronousQueue<Socket> socketQueue = new SynchronousQueue<Socket>();
 		serverThread = new Thread(
 				new Runnable() {
@@ -47,9 +47,8 @@ public class MockClientServerPair {
 					@Override
 					public void run() {
 						Socket socket = context.socket(ZMQ.REP);
-						int port = socket.bindToRandomPort("tcp://127.0.0.1");
+						socket.bind(addr);
 						try {
-							portQueue.put(port);
 							socketQueue.put(socket);
 						} catch (InterruptedException e) {
 							error = e.getMessage();
@@ -83,17 +82,14 @@ public class MockClientServerPair {
 		serverThread.setName("ServerThread");
 		clientThread.setName("Client thread");
 		serverThread.start();
-		int port=0;
 		Socket temp = null;
 		try {
-			port = portQueue.take().intValue();
 			temp = socketQueue.take();
 		} catch (InterruptedException e) {
 			error = e.getMessage();
 		}
 		serverSocket = temp;
 		if (temp == null) return;
-		addr[0] = String.format("tcp://127.0.0.1:%d", port);
 		clientThread.start();
 		try {
 			Future<Object> connectReply = runOnServer(new RunWithSockets() {
@@ -114,7 +110,7 @@ public class MockClientServerPair {
 				@Override
 				public void run(IKnimeBridge bridge) {
 					try {
-						bridge.connect(new URI(addr[0]));
+						bridge.connect(new URI(addr));
 					} catch (ZMQException e) {
 						error = String.format("ZMQ exception on connect: %s", e.getMessage());
 						e.printStackTrace();

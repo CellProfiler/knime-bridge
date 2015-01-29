@@ -57,7 +57,9 @@ public class DefaultCellProfilerService extends AbstractService implements CellP
 	@Override
 	public Module createPipelineModule(IKnimeBridge bridge, String pipeline)
 			throws PipelineException, ProtocolException {
-		return PipelineModule.newInstance(bridge, pipeline);
+		Module module = PipelineModule.newInstance(
+				getContext(), bridge, pipeline);
+		return module;
 	}
 	
 }

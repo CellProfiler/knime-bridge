@@ -19,14 +19,15 @@ import org.cellprofiler.knimebridge.IKnimeBridge;
 import org.cellprofiler.knimebridge.KBConstants;
 import org.cellprofiler.knimebridge.PipelineException;
 import org.cellprofiler.knimebridge.ProtocolException;
+import org.scijava.Context;
+import org.scijava.Contextual;
 import org.scijava.log.LogService;
 import org.scijava.module.DefaultMutableModule;
 import org.scijava.module.ModuleInfo;
 import org.scijava.module.ModuleItem;
 import org.scijava.plugin.Parameter;
 import org.scijava.ui.DialogPrompt.MessageType;
-import org.scijava.ui.UIService;
-import org.zeromq.ZMQException;
+import org.scijava.ui.UIService;import org.zeromq.ZMQException;
 
 /**
  * @author Lee Kamentsky
@@ -43,7 +44,7 @@ import org.zeromq.ZMQException;
  * measurements.
  */
 @SuppressWarnings("deprecation")
-public class PipelineModule extends DefaultMutableModule {
+public class PipelineModule extends DefaultMutableModule implements Contextual {
 	@Parameter
 	private LogService logService;
 	@Parameter
@@ -62,6 +63,8 @@ public class PipelineModule extends DefaultMutableModule {
 			new Hashtable<String, ModuleItem<Dataset>>();
 	final private Map<String, ModuleItem<ResultsTable>> tables;
 	final private TreeSet<FeatureStuffer> features;
+	private Context context;
+	private ModuleItem<Boolean> groupImages;
 	
 	/**
 	 * Construct the pipeline from a connected Knime bridge
@@ -94,10 +97,29 @@ public class PipelineModule extends DefaultMutableModule {
 	 */
 	protected void init() throws ZMQException, PipelineException, ProtocolException {
 		bridge.loadPipeline(pipeline);
+		/*
+		 * Set up the top-level module information
+		 */
 		ModuleInfo info = getInfo();
 		info.setLabel(READABLE_NAME);
 		info.setDescription(DESCRIPTION);
 		info.setName(READABLE_NAME);
+		/*
+		 * groupImages determines whether to run
+		 * a single pipeline cycle on an image set
+		 * or whether to run stacks as a group of
+		 * pipeline cycles.
+		 */
+		groupImages = addInput("groupImages", Boolean.class);
+		groupImages.setValue(this, false);
+		groupImages.setLabel("Group images");
+		groupImages.setDescription(
+				"Check this box and supply CellProfiler with image stacks\n"+
+				"if you have a pipeline that uses grouping (e.g. a pipeline\n"+
+				"with a TrackObjects or MakeProjection module.");
+		/*
+		 * pipelineOutput lets the user see the pipeline
+		 */
 		ModuleItem<String> pipelineOutput = addOutput("pipeline", String.class);
 		pipelineOutput.setValue(this, pipeline);
 		for (String channel:bridge.getInputChannels()) {
@@ -143,7 +165,10 @@ public class PipelineModule extends DefaultMutableModule {
 			imageMap.put(entry.getKey(), dataset.getImgPlus());
 		}
 		try {
-			bridge.run(imageMap);
+			if (groupImages.getValue(this).booleanValue())
+				bridge.runGroup(imageMap);
+			else
+				bridge.run(imageMap);
 		} catch (ZMQException e) {
 			error("CellProfiler pipeline failed to run because of a communication error", e);
 		} catch (CellProfilerException e) {
@@ -188,9 +213,10 @@ public class PipelineModule extends DefaultMutableModule {
 	 * @throws PipelineException 
 	 * @throws ZMQException 
 	 */
-	static public PipelineModule newInstance(IKnimeBridge bridge, String pipeline) 
+	static public PipelineModule newInstance(Context ctx, IKnimeBridge bridge, String pipeline) 
 			throws PipelineException, ProtocolException {
 		PipelineModule module = new PipelineModule(bridge, pipeline);
+		module.setContext(ctx);
 		module.init();
 		return module;
 	}
@@ -302,5 +328,18 @@ public class PipelineModule extends DefaultMutableModule {
 			DoubleColumn column = addColumn(results.length);
 			column.setArray(results);
 		}
+	}
+	@Override
+	public Context context() {
+		return context;
+	}
+	@Override
+	public Context getContext() {
+		return context();
+	}
+	@Override
+	public void setContext(Context context) {
+		this.context = context;
+		context.inject(this);
 	}
 }

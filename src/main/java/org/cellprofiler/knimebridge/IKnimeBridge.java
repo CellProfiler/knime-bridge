@@ -6,6 +6,8 @@
  */
 package org.cellprofiler.knimebridge;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +43,17 @@ public interface IKnimeBridge {
 	 * @throws ProtocolException if the server couldn't communicate properly using the protocol
 	 */
 	public void loadPipeline(String pipeline) throws PipelineException, ZMQException, ProtocolException;
+	
+	/**
+	 * Load a pipeline from a file
+	 * 
+	 * @param pipeline - file containing the pipeline
+	 * 
+	 * @throws PipelineException if the pipeline could not be parsed
+	 * @throws IOException if the file could not be opened
+	 * @throws ProtocolException on messing protocol error
+	 */
+	public void loadPipeline(File pipeline) throws PipelineException, IOException, ProtocolException;
 	/**
 	 * @return the names of the image input channels
 	 */
@@ -66,6 +79,25 @@ public interface IKnimeBridge {
 	 * @throws PipelineException 
 	 */
 	public void run(Map<String, ImgPlus<?>> images) throws ZMQException, CellProfilerException, PipelineException, ProtocolException;
+	
+	/**
+	 * Run a group of images
+	 * 
+	 * Some CellProfiler pipelines have grouping, for instance
+	 * illumination correction or tracking. You can run
+	 * grouped pipelines by creating imgPlus images with
+	 * multiple Z or T planes.
+	 * 
+	 * @param images a map of channel name to image. Each image should
+	 *               have the same number of Z or T planes
+	 * @throws ZMQException on network error
+	 * @throws CellProfilerException if CellProfiler encountered an error
+	 *                               while running the pipeline.
+	 * @throws PipelineException if there was a configuration problem
+	 *                           with the pipeline.
+	 * @throws ProtocolException
+	 */
+	public void runGroup(Map<String, ImgPlus<?>> images) throws ZMQException, CellProfilerException, PipelineException, ProtocolException;
 	
 	/**
 	 * If the feature description is of type Integer, return results as an array of ints

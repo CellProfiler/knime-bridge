@@ -6,16 +6,20 @@
  */
 package org.cellprofiler.knimebridge;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
 import net.imagej.ImgPlus;
 
-import org.cellprofiler.knimebridge.message.ConnectReply;
 import org.cellprofiler.knimebridge.message.ConnectReq;
 import org.cellprofiler.knimebridge.message.PipelineInfoReply;
 import org.cellprofiler.knimebridge.message.PipelineInfoReq;
+import org.cellprofiler.knimebridge.message.RunGroupReq;
 import org.cellprofiler.knimebridge.message.RunReply;
 import org.cellprofiler.knimebridge.message.RunReq;
 import org.zeromq.ZMQ.Context;
@@ -30,6 +34,7 @@ import org.zeromq.ZMQException;
  * Knime bridge.
  *
  */
+@SuppressWarnings("deprecation")
 class KnimeBridgeImpl implements IKnimeBridge {
 	private final static Context context = ZMQ.context(1);
 	
@@ -130,6 +135,26 @@ class KnimeBridgeImpl implements IKnimeBridge {
 	@Override
 	public float[] getFloatMeasurements(IFeatureDescription feature) {
 		return runReply.getFloatMeasurements(feature.getObjectName(), feature.getName());
+	}
+
+	@Override
+	public void loadPipeline(File pipeline) throws PipelineException,
+			IOException, ProtocolException {
+		final char [] buffer = new char[4096];
+		StringBuffer sb = new StringBuffer();
+		Reader rdr = new FileReader(pipeline);
+		while (true) {
+			final int nRead = rdr.read(buffer, 0, buffer.length);
+			if (nRead < 0) break;
+			sb.append(buffer);
+		}
+		loadPipeline(sb.toString());
+	}
+
+	@Override
+	public void runGroup(Map<String, ImgPlus<?>> images) throws ZMQException,
+			CellProfilerException, PipelineException, ProtocolException {
+		runReply = RunGroupReq.run(socket, sessionID, pipeline, images);
 	}
 
 }

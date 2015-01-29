@@ -91,6 +91,8 @@ public class PipelineInfoReply extends AbstractReply {
 	 * @return the per-object features
 	 */
 	public List<IFeatureDescription> getFeatureDescriptions(String object) {
+		if (! objectFeatures.containsKey(object))
+			return Collections.emptyList();
 		return Collections.unmodifiableList(this.objectFeatures.get(object));
 	}
 	
