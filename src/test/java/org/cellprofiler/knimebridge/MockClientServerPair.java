@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.SynchronousQueue;
+import java.util.logging.Level;
 
 import org.zeromq.ZFrame;
 import org.zeromq.ZMQ;
@@ -98,7 +99,8 @@ public class MockClientServerPair {
 				public void run(Socket socket) {
 					ZMsg msg = ZMsg.recvMsg(socket);
 					ZFrame client = msg.unwrap();
-					assert msg.popString().equals("connect-req-1");
+					final String msgType = msg.popString();
+					assert msgType.equals("connect-request-1");
 					msg.destroy();
 					ZMsg msgOut = new ZMsg();
 					msgOut.add(client);

@@ -33,6 +33,8 @@ import net.imglib2.type.numeric.real.DoubleType;
 
 import org.cellprofiler.knimebridge.MockClientServerPair.RunWithBridge;
 import org.cellprofiler.knimebridge.MockClientServerPair.RunWithSockets;
+import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.zeromq.ZFrame;
 import org.zeromq.ZMQ.Socket;
@@ -41,7 +43,6 @@ import org.zeromq.ZMsg;
 
 @SuppressWarnings("deprecation")
 public class TestKnimeBridge {
-
 	@Test
 	public void testConnectAndDisconnect() {
 		MockClientServerPair mock = new MockClientServerPair();
@@ -64,13 +65,13 @@ public class TestKnimeBridge {
 				} catch (ZMQException e) {
 					
 					e.printStackTrace();
-					fail();
+					Assert.fail();
 				} catch (PipelineException e) {
 					e.printStackTrace();
-					fail();
+					Assert.fail();
 				} catch (ProtocolException e) {
 					e.printStackTrace();
-					fail();
+					Assert.fail();
 				};
 				
 			}
@@ -81,10 +82,10 @@ public class TestKnimeBridge {
 			client.get();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-			fail();
+			Assert.fail();
 		} catch (ExecutionException e) {
 			e.printStackTrace();
-			fail();
+			Assert.fail();
 		}
 		mock.stop();
 	}
@@ -154,13 +155,13 @@ public class TestKnimeBridge {
 				} catch (ZMQException e) {
 					
 					e.printStackTrace();
-					fail();
+					Assert.fail();
 				} catch (PipelineException e) {
 					e.printStackTrace();
-					fail();
+					Assert.fail();
 				} catch (ProtocolException e) {
 					e.printStackTrace();
-					fail();
+					Assert.fail();
 				};
 				
 			}
@@ -171,10 +172,10 @@ public class TestKnimeBridge {
 			client.get();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-			fail();
+			Assert.fail();
 		} catch (ExecutionException e) {
 			e.printStackTrace();
-			fail();
+			Assert.fail();
 		}
 		mock.stop();
 	}
@@ -197,13 +198,13 @@ public class TestKnimeBridge {
 				} catch (ZMQException e) {
 					
 					e.printStackTrace();
-					fail();
+					Assert.fail();
 				} catch (PipelineException e) {
 					e.printStackTrace();
-					fail();
+					Assert.fail();
 				} catch (ProtocolException e) {
 					e.printStackTrace();
-					fail();
+					Assert.fail();
 				};
 				
 			}
@@ -214,10 +215,10 @@ public class TestKnimeBridge {
 			client.get();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-			fail();
+			Assert.fail();
 		} catch (ExecutionException e) {
 			e.printStackTrace();
-			fail();
+			Assert.fail();
 		}
 		mock.stop();
 	}
@@ -243,7 +244,7 @@ public class TestKnimeBridge {
 						} else if (feature.getName().equals("FileName_DNA")) {
 							assertEquals(feature.getType(), String.class);
 						} else {
-							fail(String.format("Unexpected feature, %s", feature.getName()));
+						Assert.fail(String.format("Unexpected feature, %s", feature.getName()));
 						}
 					}
 					features = bridge.getFeatures("Nucleus");
@@ -255,19 +256,19 @@ public class TestKnimeBridge {
 						} else if (feature.getName().equals("Location_CenterX")) {
 							assertEquals(feature.getType(), Double.class);
 						} else {
-							fail(String.format("Unexpected feature, %s", feature.getName()));
+						Assert.fail(String.format("Unexpected feature, %s", feature.getName()));
 						}
 					}
 				} catch (ZMQException e) {
 					
 					e.printStackTrace();
-					fail();
+				Assert.fail();
 				} catch (PipelineException e) {
 					e.printStackTrace();
-					fail();
+				Assert.fail();
 				} catch (ProtocolException e) {
 					e.printStackTrace();
-					fail();
+				Assert.fail();
 				};
 				
 			}
@@ -278,10 +279,10 @@ public class TestKnimeBridge {
 			client.get();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-			fail();
+		Assert.fail();
 		} catch (ExecutionException e) {
 			e.printStackTrace();
-			fail();
+		Assert.fail();
 		}
 		mock.stop();
 
@@ -327,13 +328,13 @@ public class TestKnimeBridge {
 				} catch (ZMQException e) {
 					
 					e.printStackTrace();
-					fail();
+				Assert.fail();
 				} catch (PipelineException e) {
 					e.printStackTrace();
-					fail();
+				Assert.fail();
 				} catch (ProtocolException e) {
 					e.printStackTrace();
-					fail();
+				Assert.fail();
 				};
 				
 			}
@@ -350,10 +351,10 @@ public class TestKnimeBridge {
 			client.get();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-			fail();
+		Assert.fail();
 		} catch (ExecutionException e) {
 			e.printStackTrace();
-			fail();
+		Assert.fail();
 		}
 		
 		final String stringMeasurement = "I'm hacking in Konstanz on Jan 25, 2015 at 5:54 in the evening";
@@ -415,16 +416,16 @@ public class TestKnimeBridge {
 					
 				} catch (ZMQException e) {
 					e.printStackTrace();
-					fail();
+				Assert.fail();
 				} catch (CellProfilerException e) {
 					e.printStackTrace();
-					fail();
+				Assert.fail();
 				} catch (PipelineException e) {
 					e.printStackTrace();
-					fail();
+				Assert.fail();
 				} catch (ProtocolException e) {
 					e.printStackTrace();
-					fail();
+				Assert.fail();
 				}
 			}
 		});
@@ -559,10 +560,10 @@ public class TestKnimeBridge {
 			client.get();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-			fail();
+		Assert.fail();
 		} catch (ExecutionException e) {
 			e.printStackTrace();
-			fail();
+		Assert.fail();
 		}
 		mock.stop();
 	}
@@ -582,13 +583,13 @@ public class TestKnimeBridge {
 				} catch (ZMQException e) {
 					
 					e.printStackTrace();
-					fail();
+				Assert.fail();
 				} catch (PipelineException e) {
 					e.printStackTrace();
-					fail();
+				Assert.fail();
 				} catch (ProtocolException e) {
 					e.printStackTrace();
-					fail();
+				Assert.fail();
 				};
 				
 			}
@@ -605,10 +606,10 @@ public class TestKnimeBridge {
 			client.get();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-			fail();
+		Assert.fail();
 		} catch (ExecutionException e) {
 			e.printStackTrace();
-			fail();
+		Assert.fail();
 		}
 		
 		final String stringMeasurement = "I'm hacking in Konstanz on Jan 25, 2015 at 5:54 in the evening";
@@ -670,16 +671,16 @@ public class TestKnimeBridge {
 					
 				} catch (ZMQException e) {
 					e.printStackTrace();
-					fail();
+				Assert.fail();
 				} catch (CellProfilerException e) {
 					e.printStackTrace();
-					fail();
+				Assert.fail();
 				} catch (PipelineException e) {
 					e.printStackTrace();
-					fail();
+				Assert.fail();
 				} catch (ProtocolException e) {
 					e.printStackTrace();
-					fail();
+				Assert.fail();
 				}
 			}
 		});
@@ -815,10 +816,10 @@ public class TestKnimeBridge {
 			client.get();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-			fail();
+		Assert.fail();
 		} catch (ExecutionException e) {
 			e.printStackTrace();
-			fail();
+		Assert.fail();
 		}
 		mock.stop();
 	}
