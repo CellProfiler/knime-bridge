@@ -192,7 +192,7 @@ public class TestKnimeBridge {
 			public void run(IKnimeBridge bridge) {
 				try {
 					bridge.loadPipeline(pipeline);
-					List<String> objects = bridge.getObjectNames();
+					List<String> objects = bridge.getResultTableNames();
 					assertEquals(objects.size(), 2);
 					assertEquals(objects.get(0), "Nucleus");
 					assertEquals(objects.get(1), "Image");
@@ -393,6 +393,8 @@ public class TestKnimeBridge {
 			public void run(IKnimeBridge bridge) {
 				try {
 					bridge.run(map);
+					assertEquals(bridge.getNumberOfRows(KBConstants.IMAGE), 1);
+					assertEquals(bridge.getNumberOfRows("Nuclei"), 3);
 					double [] doubles = bridge.getDoubleMeasurements(
 							new FeatureDescriptionImpl("Nuclei", "X", Double.class));
 					assertEquals(3, doubles.length);
@@ -660,6 +662,7 @@ public class TestKnimeBridge {
 					assertEquals(floatValues[4], floats[1], .0001);
 					int [] ints = bridge.getIntMeasurements(
 							new FeatureDescriptionImpl(KBConstants.IMAGE, "ImageNumber", Integer.class));
+					assertEquals(bridge.getNumberOfRows("Nuclei"), 3);
 					assertEquals(intValues[5], ints[0]);
 					ints = bridge.getIntMeasurements(
 							new FeatureDescriptionImpl("Nuclei", "ObjectNumber", Integer.class));

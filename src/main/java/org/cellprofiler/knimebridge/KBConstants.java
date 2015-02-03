@@ -17,5 +17,16 @@ public class KBConstants {
 	 * to retrieve per-image features.
 	 */
 	public final static String IMAGE = "Image"; 
+	/*
+	 * The index of the image table, which should be in every
+	 * image table.
+	 */
+	public final static String IMAGE_NUMBER = "ImageNumber";
+	/*
+	 * The object-level measurement whose length is the number
+	 * of objects in the segmentation and whose elements give the indexes
+	 * of the objects in the segmentation.
+	 */
+	public final static String OBJECT_NUMBER = "ObjectNumber";
 
 }

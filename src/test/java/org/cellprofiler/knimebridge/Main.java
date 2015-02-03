@@ -135,7 +135,7 @@ public class Main {
 						if (root == null) {
 							root = new DefaultMutableTreeNode("Measurements", true);
 							root.add(new DefaultMutableTreeNode(KBConstants.IMAGE, true));
-							for (String object_name:bridge.getObjectNames()) {
+							for (String object_name:bridge.getResultTableNames()) {
 								root.add(new DefaultMutableTreeNode(object_name, true));
 							}
 						}
@@ -309,7 +309,7 @@ public class Main {
 		    	}
 		    	JList channelList = new JList(mrStupid);
 		    	panel.add(channelList, BorderLayout.NORTH);
-		    	List<String> object_names = new ArrayList<String>(bridge.getObjectNames());
+		    	List<String> object_names = new ArrayList<String>(bridge.getResultTableNames());
 		    	Collections.sort(object_names);
 		    	List<Object []> features = new ArrayList<Object[]>();
 		    	String imageTitle = "Per-image";

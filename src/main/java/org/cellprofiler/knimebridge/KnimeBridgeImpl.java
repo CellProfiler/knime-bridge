@@ -91,7 +91,7 @@ class KnimeBridgeImpl implements IKnimeBridge {
 	 * @see org.cellprofiler.knimebridge.IKnimeBridge#getObjectNames()
 	 */
 	@Override
-	public List<String> getObjectNames() throws ZMQException {
+	public List<String> getResultTableNames() throws ZMQException {
 		final List<String> names = new ArrayList<String>(piReply.getObjects());
 		names.add(KBConstants.IMAGE);
 		return names;
@@ -158,6 +158,11 @@ class KnimeBridgeImpl implements IKnimeBridge {
 	public void runGroup(Map<String, ImgPlus<?>> images) throws ZMQException,
 			CellProfilerException, PipelineException, ProtocolException {
 		runReply = RunGroupReq.run(socket, sessionID, pipeline, images);
+	}
+
+	@Override
+	public int getNumberOfRows(String resultTableName) {
+		return runReply.getNumberOfObjects(resultTableName);
 	}
 
 }

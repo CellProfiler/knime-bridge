@@ -20,6 +20,7 @@ import org.cellprofiler.knimebridge.CellProfilerException;
 import org.cellprofiler.knimebridge.KBConstants;
 import org.cellprofiler.knimebridge.PipelineException;
 import org.cellprofiler.knimebridge.ProtocolException;
+import org.joni.exception.ValueException;
 import org.zeromq.ZFrame;
 import org.zeromq.ZMsg;
 
@@ -353,6 +354,19 @@ public class RunReply extends AbstractReply {
 		if (objectName == null) objectName = KBConstants.IMAGE;
 		if (! floatFeatures.containsKey(objectName)) return null;
 		return doubleFeatures.get(objectName).get(name);
+	}
+	/**
+	 * Return the number of objects in an image data set
+	 * 
+	 * For groups, this is the total # in all image sets processed
+	 * 
+	 * @param resultTableName
+	 * @return # of rows of measurement data to expect
+	 */
+	public int getNumberOfObjects(String resultTableName) {
+		if (resultTableName.equals(KBConstants.IMAGE)) 
+			return intFeatures.get(resultTableName).get(KBConstants.IMAGE_NUMBER).length;
+		return intFeatures.get(resultTableName).get(KBConstants.OBJECT_NUMBER).length;
 	}
 
 }

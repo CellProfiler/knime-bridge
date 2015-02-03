@@ -129,7 +129,7 @@ public class PipelineModule extends DefaultMutableModule implements Contextual {
 			input.setDescription(String.format("Input image for channel %s", channel));
 			channelInputs.put(channel, input);
 		}
-		List<String> objectNames = new ArrayList<String>(bridge.getObjectNames());
+		List<String> objectNames = new ArrayList<String>(bridge.getResultTableNames());
 		objectNames.add(KBConstants.IMAGE);
 		for (String objectName:objectNames) {
 			for (IFeatureDescription feature:bridge.getFeatures(objectName)) {

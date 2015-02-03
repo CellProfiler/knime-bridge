@@ -59,17 +59,17 @@ public interface IKnimeBridge {
 	 */
 	public List<String> getInputChannels() throws ZMQException;
 	/**
-	 * @return the names of the segmentations
+	 * @return the names of the result tables
 	 */
-	public List<String> getObjectNames() throws ZMQException;
+	public List<String> getResultTableNames() throws ZMQException;
 	
 	/**
 	 * Get the features that you can expect to be returned in the table
 	 * 
-	 * @param objectName the name of the segmentation or null for the image features
-	 * @return one feature description per feature
+	 * @param resultTableName the name of the result table that has the features
+	 * @return one feature description per column
 	 */
-	public List<IFeatureDescription> getFeatures(String objectName) throws ZMQException;
+	public List<IFeatureDescription> getFeatures(String resultTableName) throws ZMQException;
 	
 	/**
 	 * Run one cycle of the pipeline
@@ -99,6 +99,13 @@ public interface IKnimeBridge {
 	 */
 	public void runGroup(Map<String, ImgPlus<?>> images) throws ZMQException, CellProfilerException, PipelineException, ProtocolException;
 	
+	/**
+	 * Get the # of rows to expect for each feature for this result table
+	 * 
+	 * @param resultTableName
+	 * @return
+	 */
+	public int getNumberOfRows(String resultTableName);
 	/**
 	 * If the feature description is of type Integer, return results as an array of ints
 	 * 
