@@ -193,8 +193,9 @@ public class TestKnimeBridge {
 				try {
 					bridge.loadPipeline(pipeline);
 					List<String> objects = bridge.getObjectNames();
-					assertEquals(objects.size(), 1);
+					assertEquals(objects.size(), 2);
 					assertEquals(objects.get(0), "Nucleus");
+					assertEquals(objects.get(1), "Image");
 				} catch (ZMQException e) {
 					
 					e.printStackTrace();

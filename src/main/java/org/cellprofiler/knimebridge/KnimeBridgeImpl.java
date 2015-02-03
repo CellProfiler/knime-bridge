@@ -11,6 +11,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -91,7 +92,9 @@ class KnimeBridgeImpl implements IKnimeBridge {
 	 */
 	@Override
 	public List<String> getObjectNames() throws ZMQException {
-		return piReply.getObjects();
+		final List<String> names = new ArrayList<String>(piReply.getObjects());
+		names.add(KBConstants.IMAGE);
+		return names;
 	}
 
 	/* (non-Javadoc)
