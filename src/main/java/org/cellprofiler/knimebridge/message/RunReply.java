@@ -20,7 +20,6 @@ import org.cellprofiler.knimebridge.CellProfilerException;
 import org.cellprofiler.knimebridge.KBConstants;
 import org.cellprofiler.knimebridge.PipelineException;
 import org.cellprofiler.knimebridge.ProtocolException;
-import org.joni.exception.ValueException;
 import org.zeromq.ZFrame;
 import org.zeromq.ZMsg;
 

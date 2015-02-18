@@ -12,11 +12,13 @@ import java.io.IOException;
 import java.io.Reader;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import net.imagej.ImgPlus;
 
+import org.cellprofiler.knimebridge.message.CleanPipelineReq;
 import org.cellprofiler.knimebridge.message.ConnectReq;
 import org.cellprofiler.knimebridge.message.PipelineInfoReply;
 import org.cellprofiler.knimebridge.message.PipelineInfoReq;
@@ -146,12 +148,16 @@ class KnimeBridgeImpl implements IKnimeBridge {
 		final char [] buffer = new char[4096];
 		StringBuffer sb = new StringBuffer();
 		Reader rdr = new FileReader(pipeline);
-		while (true) {
-			final int nRead = rdr.read(buffer, 0, buffer.length);
-			if (nRead < 0) break;
-			sb.append(buffer);
+		try {
+			while (true) {
+				final int nRead = rdr.read(buffer, 0, buffer.length);
+				if (nRead < 0) break;
+				sb.append(buffer);
+			}
+			loadPipeline(sb.toString());
+		} finally {
+			rdr.close();
 		}
-		loadPipeline(sb.toString());
 	}
 
 	@Override
@@ -163,6 +169,50 @@ class KnimeBridgeImpl implements IKnimeBridge {
 	@Override
 	public int getNumberOfRows(String resultTableName) {
 		return runReply.getNumberOfObjects(resultTableName);
+	}
+
+	@Override
+	public String cleanPipeline(String pipeline, int flags)
+			throws PipelineException, IOException, ProtocolException {
+		final List<String> moduleNames = new ArrayList<String>();
+		if ((flags & KBConstants.REMOVE_EXPORT_TO_DATABASE) != 0)
+			moduleNames.add(KBConstants.EXPORT_TO_DATABASE);
+		if ((flags & KBConstants.REMOVE_EXPORT_TO_SPREADSHEET) != 0)
+			moduleNames.add(KBConstants.EXPORT_TO_SPREADSHEET);
+		if ((flags & KBConstants.REMOVE_SAVE_IMAGES) != 0)
+			moduleNames.add(KBConstants.SAVE_IMAGES);
+		return cleanPipeline(pipeline, moduleNames);
+	}
+
+	@Override
+	public String cleanPipeline(String pipeline) throws PipelineException,
+			IOException, ProtocolException {
+		return cleanPipeline(pipeline, KBConstants.REMOVE_ALL);
+	}
+
+	@Override
+	public String cleanPipeline(String pipeline, Collection<String> moduleNames)
+			throws PipelineException, IOException, ProtocolException {
+		return CleanPipelineReq.send(socket, sessionID, pipeline, moduleNames).getPipeline();
+	}
+
+	@Override
+	public void cleanPipeline() throws PipelineException, IOException,
+			ProtocolException {
+		this.pipeline = cleanPipeline(this.pipeline);
+		
+	}
+
+	@Override
+	public void cleanPipeline(int flags) throws PipelineException, IOException,
+			ProtocolException {
+		this.pipeline = cleanPipeline(this.pipeline, flags);
+	}
+
+	@Override
+	public void cleanPipeline(Collection<String> moduleNames)
+			throws PipelineException, IOException, ProtocolException {
+		this.pipeline = cleanPipeline(this.pipeline, moduleNames);
 	}
 
 }

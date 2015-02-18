@@ -13,7 +13,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.SynchronousQueue;
-import java.util.logging.Level;
 
 import org.zeromq.ZFrame;
 import org.zeromq.ZMQ;

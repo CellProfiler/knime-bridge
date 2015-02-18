@@ -8,8 +8,13 @@ package org.cellprofiler.knimebridge;
 
 import static org.junit.Assert.*;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
@@ -21,6 +26,8 @@ import java.util.concurrent.Future;
 
 import javax.json.Json;
 import javax.json.JsonArray;
+import javax.json.JsonReader;
+import javax.json.JsonValue;
 import javax.json.JsonWriter;
 
 import net.imagej.ImgPlus;
@@ -33,8 +40,8 @@ import net.imglib2.type.numeric.real.DoubleType;
 
 import org.cellprofiler.knimebridge.MockClientServerPair.RunWithBridge;
 import org.cellprofiler.knimebridge.MockClientServerPair.RunWithSockets;
+import org.cellprofiler.knimebridge.message.CleanPipelineReq;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.zeromq.ZFrame;
 import org.zeromq.ZMQ.Socket;
@@ -77,17 +84,7 @@ public class TestKnimeBridge {
 			}
 		});
 		Future<Object> server = handlePipelineReq(mock, pipeline, channels);
-		try {
-			server.get();
-			client.get();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-			Assert.fail();
-		} catch (ExecutionException e) {
-			e.printStackTrace();
-			Assert.fail();
-		}
-		mock.stop();
+		runMockPair(mock, client, server);
 	}
 
 	/**
@@ -103,12 +100,12 @@ public class TestKnimeBridge {
 			public void run(Socket socket) {
 				ZMsg msg = ZMsg.recvMsg(socket);
 				ZFrame client = msg.unwrap();
-				String sessionID = msg.popString();
-				assertNotNull(sessionID);
+				String messageType = msg.popString();
+				assertEquals("pipeline-info-req-1", messageType);
 				String recievedPipeline = msg.popString();
 				assertEquals(pipeline, recievedPipeline);
 				ZMsg msgOut = new ZMsg();
-				msgOut.add(sessionID);
+				msgOut.add("pipeline-info-response-1");
 				StringWriter sw = new StringWriter();
 				JsonWriter writer = Json.createWriter(sw);
 				writer.writeArray(Json.createArrayBuilder()
@@ -167,17 +164,7 @@ public class TestKnimeBridge {
 			}
 		});
 		Future<Object> server = handlePipelineReq(mock, pipeline, channels);
-		try {
-			server.get();
-			client.get();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-			Assert.fail();
-		} catch (ExecutionException e) {
-			e.printStackTrace();
-			Assert.fail();
-		}
-		mock.stop();
+		runMockPair(mock, client, server);
 	}
 
 	@Test
@@ -211,17 +198,7 @@ public class TestKnimeBridge {
 			}
 		});
 		Future<Object> server = handlePipelineReq(mock, pipeline, channels);
-		try {
-			server.get();
-			client.get();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-			Assert.fail();
-		} catch (ExecutionException e) {
-			e.printStackTrace();
-			Assert.fail();
-		}
-		mock.stop();
+		runMockPair(mock, client, server);
 	}
 
 	@Test
@@ -275,6 +252,19 @@ public class TestKnimeBridge {
 			}
 		});
 		Future<Object> server = handlePipelineReq(mock, pipeline, channels);
+		runMockPair(mock, client, server);
+
+	}
+
+	/**
+	 * Run a mock client-server pair.
+	 * 
+	 * @param mock the mock framework.
+	 * @param client the client end of the mock
+	 * @param server the server end of the mock.
+	 */
+	protected void runMockPair(MockClientServerPair mock,
+			Future<Object> client, Future<Object> server) {
 		try {
 			server.get();
 			client.get();
@@ -286,8 +276,277 @@ public class TestKnimeBridge {
 		Assert.fail();
 		}
 		mock.stop();
-
 	}
+	
+	@Test
+	public void testCleanPipelineS() {
+		MockClientServerPair mock = new MockClientServerPair();
+		assertNull(mock.error);
+		final String pipelineIn = "Not a pipeline";
+		final String pipelineOut = "Aloha from #snowpocalypse";
+		Future<Object> client = mock.runOnClient(new RunWithBridge() {
+
+			@Override
+			public void run(IKnimeBridge bridge) {
+				try {
+					final String response = bridge.cleanPipeline(pipelineIn);
+					assertEquals(pipelineOut, response);
+				} catch (PipelineException e) {
+					e.printStackTrace();
+					Assert.fail();
+				} catch (IOException e) {
+					e.printStackTrace();
+					Assert.fail();
+				} catch (ProtocolException e) {
+					e.printStackTrace();
+					Assert.fail();
+				}
+			}
+		});
+		final List<String> expectedModuleNames = Arrays.asList(
+				KBConstants.EXPORT_TO_DATABASE, KBConstants.EXPORT_TO_SPREADSHEET,
+				KBConstants.SAVE_IMAGES);
+		Future<Object> server = handleCleanPipelineReq(
+				mock, pipelineIn, pipelineOut, expectedModuleNames);
+		runMockPair(mock, client, server);
+	}
+
+	@Test
+	public void testCleanPipeline() {
+		MockClientServerPair mock = new MockClientServerPair();
+		assertNull(mock.error);
+		final String pipelineIn = "Not a pipeline";
+		final String pipelineOut = "Aloha from #snowpocalypse";
+		Future<Object> client = mock.runOnClient(new RunWithBridge() {
+
+			@Override
+			public void run(IKnimeBridge bridge) {
+				try {
+					bridge.loadPipeline(pipelineIn);
+					bridge.cleanPipeline();
+					assertBridgePipelineEquals(pipelineOut, bridge);
+				} catch (PipelineException e) {
+					e.printStackTrace();
+					Assert.fail();
+				} catch (IOException e) {
+					e.printStackTrace();
+					Assert.fail();
+				} catch (ProtocolException e) {
+					e.printStackTrace();
+					Assert.fail();
+				}
+			}
+		});
+		final List<String> expectedModuleNames = Arrays.asList(
+				KBConstants.EXPORT_TO_DATABASE, KBConstants.EXPORT_TO_SPREADSHEET,
+				KBConstants.SAVE_IMAGES);
+		Future<Object> server = handleCleanPipelineReq(
+				mock, pipelineIn, pipelineOut, expectedModuleNames);
+		runMockPair(mock, client, server);
+	}
+
+	@Test
+	public void testCleanPipelineSI() {
+		for (int flags=1; flags<8; flags++) {
+			MockClientServerPair mock = new MockClientServerPair();
+			assertNull(mock.error);
+			final String pipelineIn = "Not a pipeline";
+			final String pipelineOut = "Aloha from #snowpocalypse";
+			final int finalFlags = flags;
+			Future<Object> client = mock.runOnClient(new RunWithBridge() {
+	
+				@Override
+				public void run(IKnimeBridge bridge) {
+					try {
+						final String response = bridge.cleanPipeline(pipelineIn, finalFlags);
+						assertEquals(pipelineOut, response);
+					} catch (PipelineException e) {
+						e.printStackTrace();
+						Assert.fail();
+					} catch (IOException e) {
+						e.printStackTrace();
+						Assert.fail();
+					} catch (ProtocolException e) {
+						e.printStackTrace();
+						Assert.fail();
+					}
+				}
+			});
+			final List<String> expectedModuleNames = new ArrayList<String>();
+			if ((flags & KBConstants.REMOVE_EXPORT_TO_DATABASE) != 0)
+					expectedModuleNames.add(KBConstants.EXPORT_TO_DATABASE);
+			if ((flags & KBConstants.REMOVE_EXPORT_TO_SPREADSHEET) != 0)
+				expectedModuleNames.add(KBConstants.EXPORT_TO_SPREADSHEET);
+			if ((flags & KBConstants.REMOVE_SAVE_IMAGES) != 0)
+					expectedModuleNames.add(KBConstants.SAVE_IMAGES);
+			Future<Object> server = handleCleanPipelineReq(
+					mock, pipelineIn, pipelineOut, expectedModuleNames);
+			runMockPair(mock, client, server);
+		}
+	}
+	
+	@Test
+	public void testCleanPipelineI() {
+		MockClientServerPair mock = new MockClientServerPair();
+		assertNull(mock.error);
+		final String pipelineIn = "Not a pipeline";
+		final String pipelineOut = "Aloha from #snowpocalypse";
+		Future<Object> client = mock.runOnClient(new RunWithBridge() {
+
+			@Override
+			public void run(IKnimeBridge bridge) {
+				try {
+					bridge.loadPipeline(pipelineIn);
+					bridge.cleanPipeline(KBConstants.REMOVE_EXPORT_MODULES);
+					assertBridgePipelineEquals(pipelineOut, bridge);
+				} catch (PipelineException e) {
+					e.printStackTrace();
+					Assert.fail();
+				} catch (IOException e) {
+					e.printStackTrace();
+					Assert.fail();
+				} catch (ProtocolException e) {
+					e.printStackTrace();
+					Assert.fail();
+				}
+			}
+		});
+		final List<String> expectedModuleNames = Arrays.asList(
+				KBConstants.EXPORT_TO_DATABASE, KBConstants.EXPORT_TO_SPREADSHEET);
+		Future<Object> server = handleCleanPipelineReq(
+				mock, pipelineIn, pipelineOut, expectedModuleNames);
+		runMockPair(mock, client, server);
+	}
+
+	@Test
+	public void testCleanPipelineSC() {
+		MockClientServerPair mock = new MockClientServerPair();
+		assertNull(mock.error);
+		final String pipelineIn = "Not a pipeline";
+		final String pipelineOut = "Aloha from #snowpocalypse";
+		final List<String> expectedModuleNames = Arrays.asList(
+				KBConstants.EXPORT_TO_DATABASE, 
+				KBConstants.SAVE_IMAGES);
+		Future<Object> client = mock.runOnClient(new RunWithBridge() {
+
+			@Override
+			public void run(IKnimeBridge bridge) {
+				try {
+					final String response = bridge.cleanPipeline(pipelineIn, expectedModuleNames);
+					assertEquals(pipelineOut, response);
+				} catch (PipelineException e) {
+					e.printStackTrace();
+					Assert.fail();
+				} catch (IOException e) {
+					e.printStackTrace();
+					Assert.fail();
+				} catch (ProtocolException e) {
+					e.printStackTrace();
+					Assert.fail();
+				}
+			}
+		});
+		Future<Object> server = handleCleanPipelineReq(
+				mock, pipelineIn, pipelineOut, expectedModuleNames);
+		runMockPair(mock, client, server);
+	}
+			
+	@Test
+	public void testCleanPipelineC() {
+		MockClientServerPair mock = new MockClientServerPair();
+		assertNull(mock.error);
+		final String pipelineIn = "Not a pipeline";
+		final String pipelineOut = "Aloha from #snowpocalypse";
+		final List<String> expectedModuleNames = Arrays.asList(
+				KBConstants.EXPORT_TO_DATABASE, 
+				KBConstants.SAVE_IMAGES);
+		Future<Object> client = mock.runOnClient(new RunWithBridge() {
+
+			@Override
+			public void run(IKnimeBridge bridge) {
+				try {
+					bridge.loadPipeline(pipelineIn);
+					bridge.cleanPipeline(expectedModuleNames);
+					assertBridgePipelineEquals(pipelineOut, bridge);
+				} catch (PipelineException e) {
+					e.printStackTrace();
+					Assert.fail();
+				} catch (IOException e) {
+					e.printStackTrace();
+					Assert.fail();
+				} catch (ProtocolException e) {
+					e.printStackTrace();
+					Assert.fail();
+				}
+			}
+		});
+		Future<Object> server = handleCleanPipelineReq(
+				mock, pipelineIn, pipelineOut, expectedModuleNames);
+		runMockPair(mock, client, server);
+	}
+
+	private Future<Object> handleCleanPipelineReq(
+			final MockClientServerPair mock, final String pipelineIn,
+			final String pipelineOut, final List<String> expectedModuleNames) {
+		return mock.runOnServer(new RunWithSockets() {
+
+			@Override
+			public void run(Socket socket) {
+				ZMsg msg = ZMsg.recvMsg(socket);
+				ZFrame client = msg.unwrap();
+				String messageType = msg.popString();
+				if (messageType.equals("pipeline-info-req-1")) {
+					/*
+					 * Loading a pipeline - give them back something very boring
+					 */
+					ZMsg msgOut = new ZMsg();
+					msgOut.add("pipeline-info-response-1");
+					StringWriter sw = new StringWriter();
+					JsonWriter writer = Json.createWriter(sw);
+					writer.writeArray(Json.createArrayBuilder()
+							.add(Json.createArrayBuilder().build())
+							.add(Json.createArrayBuilder()
+									.add("java.lang.Integer")
+									.add("java.lang.Float")
+									.add("java.lang.Double")
+									.add("java.lang.String").build())
+							.add(Json.createObjectBuilder().build())
+							.build());
+					writer.close();
+					msgOut.add(sw.toString());
+					msgOut.wrap(client);
+					msgOut.send(socket);
+					msg = ZMsg.recvMsg(socket);
+					client = msg.unwrap();
+					messageType = msg.popString();
+				}
+				assertEquals("clean-pipeline-request-1", messageType);
+				String recievedPipeline = msg.popString();
+				assertEquals(pipelineIn, recievedPipeline);
+				final JsonReader rdr = Json.createReader(new StringReader(msg.popString()));
+				final JsonArray moduleNames = rdr.readArray();
+				assertEquals(expectedModuleNames.size(), moduleNames.size());
+				for (String expectedModuleName:expectedModuleNames) {
+					boolean found = false;
+					for (int i = 0; i<moduleNames.size(); i++) {
+						if (expectedModuleName.equals(moduleNames.getString(i))) {
+							found = true;
+							break;
+						}
+					}
+					assertTrue(
+							String.format("%s was not in %s", 
+									expectedModuleName, moduleNames.toString()),
+							found);
+				}
+				ZMsg msgOut = new ZMsg();
+				msgOut.add("clean-pipeline-response-1");
+				msgOut.add(pipelineOut);
+				msgOut.wrap(client);
+				msgOut.send(socket);
+			}});
+	}
+
 	private ImgPlus<DoubleType> makeImgPlus(long [] dims, String name, AxisType [] axes) {
 		// use a random number generator
 		final Random rnd = new Random( 1241234 );
@@ -355,7 +614,7 @@ public class TestKnimeBridge {
 		Assert.fail();
 		} catch (ExecutionException e) {
 			e.printStackTrace();
-		Assert.fail();
+			Assert.fail();
 		}
 		
 		final String stringMeasurement = "I'm hacking in Konstanz on Jan 25, 2015 at 5:54 in the evening";
@@ -558,17 +817,7 @@ public class TestKnimeBridge {
 					.build();
 			}
 		});
-		try {
-			server.get();
-			client.get();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		Assert.fail();
-		} catch (ExecutionException e) {
-			e.printStackTrace();
-		Assert.fail();
-		}
-		mock.stop();
+		runMockPair(mock, client, server);
 	}
 
 	@Test
@@ -815,17 +1064,34 @@ public class TestKnimeBridge {
 					.build();
 			}
 		});
+		runMockPair(mock, client, server);
+	}
+
+	/**
+	 * @param pipelineOut
+	 * @param bridge
+	 * @throws NoSuchFieldException
+	 * @throws IllegalAccessException
+	 */
+	protected void assertBridgePipelineEquals(final String pipelineOut,IKnimeBridge bridge)  {
+		Field field;
 		try {
-			server.get();
-			client.get();
-		} catch (InterruptedException e) {
+			field = KnimeBridgeImpl.class.getDeclaredField("pipeline");
+			field.setAccessible(true);
+			assertEquals(pipelineOut, field.get(bridge));
+		} catch (SecurityException e) {
 			e.printStackTrace();
-		Assert.fail();
-		} catch (ExecutionException e) {
+			Assert.fail();
+		} catch (NoSuchFieldException e) {
 			e.printStackTrace();
-		Assert.fail();
+			Assert.fail();
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			Assert.fail();
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+			Assert.fail();
 		}
-		mock.stop();
 	}
 
 }

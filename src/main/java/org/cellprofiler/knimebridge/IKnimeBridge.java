@@ -9,6 +9,7 @@ package org.cellprofiler.knimebridge;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -54,6 +55,85 @@ public interface IKnimeBridge {
 	 * @throws ProtocolException on messing protocol error
 	 */
 	public void loadPipeline(File pipeline) throws PipelineException, IOException, ProtocolException;
+	
+	/**
+	 * Clean the pipeline loaded by loadPipeline of all output modules.
+	 * @see IKnimeBridge#cleanPipeline(String) for details.
+	 * 
+	 * @throws PipelineException
+	 * @throws IOException
+	 * @throws ProtocolException
+	 */
+	public void cleanPipeline() throws PipelineException, IOException, ProtocolException;
+	
+	/**
+	 * Clean selected modules from the pipeline loaded by loadPipeline.
+	 * 
+	 * @param flags @see IKnimeBridge#cleanPipeline(String, int) for details
+	 * @throws PipelineException
+	 * @throws IOException
+	 * @throws ProtocolException
+	 */
+	public void cleanPipeline(int flags) throws PipelineException, IOException, ProtocolException;
+	
+	/**
+	 * Clean modules with given names from the pipeline loaded by loadPipeline.
+	 * 
+	 * @param moduleNames
+	 * @throws PipelineException
+	 * @throws IOException
+	 * @throws ProtocolException
+	 */
+	public void cleanPipeline(Collection<String> moduleNames) 
+			throws PipelineException, IOException, ProtocolException;
+	/**
+	 * Remove modules by name from a pipeline
+	 * 
+	 * @param pipeline the text from a CellProfiler pipeline
+	 * @param moduleNames the names of the modules to be removed as they appear
+	 *                    in CellProfiler.
+	 * @return the modified pipeline text
+	 * @throws PipelineException if the input pipeline was badly formatted
+	 * @throws IOException if there was a communication failure
+	 * @throws ProtocolException if the server did not support the function
+	 */
+	public String cleanPipeline(String pipeline, Collection<String> moduleNames)
+			throws PipelineException, IOException, ProtocolException;
+	/**
+	 * Remove selected categories of modules from the pipeline
+	 * that are inappropriate for execution by the bridge.
+	 * 
+	 * There may be situations where users want to keep some
+	 * categories of modules and discard others, for instance
+	 * if their pipeline creates an illumination function via
+	 * SaveImages, but they want the ExportToSpreadsheet module
+	 * bypassed because the measurements will be collected by Knime.
+	 * 
+	 * @param pipeline the text of a CellProfiler pipeline file
+	 * @param flags a combination of the flags, {@value KBConstants#REMOVE_EXPORT_TO_DATABASE},
+	 *        {@value KBConstants#REMOVE_EXPORT_TO_SPREADSHEET} and / or
+	 *        {@value KBConstants#REMOVE_SAVE_IMAGES}. Only the flagged classes of
+	 *        modules will be removed.
+	 *        
+	 * @return a modified pipeline
+	 * @throws PipelineException if the input pipeline was badly formatted
+	 * @throws IOException if there was a communication failure
+	 * @throws ProtocolException if the server did not support the function
+	 */
+	public String cleanPipeline(String pipeline, int flags) 
+			throws PipelineException, IOException, ProtocolException;
+	/**
+	 * Remove all modules from the pipeline that are inappropriate
+	 * for execution via the bridge because they output
+	 * to disk. (ExportToSpreadsheet, ExportToDatabase, SaveImages)
+	 * 
+	 * @param pipeline the text of a CellProfiler pipeline
+	 * @return a rewritten pipeline without the export/save modules
+	 * @throws PipelineException if the input pipeline was badly formatted
+	 * @throws IOException if there was a communication failure
+	 * @throws ProtocolException if the server did not support the function
+	 */
+	public String cleanPipeline(String pipeline) throws PipelineException, IOException, ProtocolException;
 	/**
 	 * @return the names of the image input channels
 	 */
