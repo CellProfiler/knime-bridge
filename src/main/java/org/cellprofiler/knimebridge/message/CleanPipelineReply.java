@@ -3,9 +3,12 @@
  */
 package org.cellprofiler.knimebridge.message;
 
+import java.nio.charset.Charset;
+
 import org.cellprofiler.knimebridge.CellProfilerException;
 import org.cellprofiler.knimebridge.PipelineException;
 import org.cellprofiler.knimebridge.ProtocolException;
+import org.python.google.common.base.Charsets;
 import org.zeromq.ZMsg;
 import org.zeromq.ZMQ.Socket;
 
@@ -50,7 +53,7 @@ public class CleanPipelineReply extends AbstractReply {
 	@Override
 	protected void parse(ZMsg msg) throws ProtocolException, PipelineException,
 			CellProfilerException {
-		pipeline = msg.popString();
+		pipeline = popString(msg);
 	}
 	
 	/**

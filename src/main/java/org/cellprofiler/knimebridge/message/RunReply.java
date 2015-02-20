@@ -58,7 +58,7 @@ public class RunReply extends AbstractReply {
 	}
 	@Override
 	protected void parse(ZMsg msg) throws CellProfilerException, PipelineException, ProtocolException {
-		String featureMetadata = msg.popString();
+		String featureMetadata = popString(msg);
 		JsonReader rdr = Json.createReader(new StringReader(featureMetadata));
 		ZFrame frame = msg.pop();
 		if (frame == null) throw new ProtocolException("Missing data value frame");

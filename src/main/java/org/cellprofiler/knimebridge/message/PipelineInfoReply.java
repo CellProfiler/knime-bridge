@@ -119,7 +119,7 @@ public class PipelineInfoReply extends AbstractReply {
 	}
 	@Override
 	protected void parse(ZMsg reply) throws ProtocolException {
-		final String body = reply.popString();
+		final String body = popString(reply);
 		if (body == null) {
 			throw new ProtocolException("Pipeline info reply is missing its body");
 		}

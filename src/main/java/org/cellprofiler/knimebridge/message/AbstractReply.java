@@ -9,6 +9,7 @@ package org.cellprofiler.knimebridge.message;
 import org.cellprofiler.knimebridge.CellProfilerException;
 import org.cellprofiler.knimebridge.PipelineException;
 import org.cellprofiler.knimebridge.ProtocolException;
+import org.python.google.common.base.Charsets;
 import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
 
@@ -86,6 +87,20 @@ public abstract class AbstractReply {
 		} catch (PipelineException e) {
 			throw new ProtocolException("Unexpected pipeline exception");
 		}
+	}
+	
+	/**
+	 * The Knime-bridge protocol for popping a string
+	 * from a ZMsg.
+	 * 
+	 * Take care of encoding.
+	 * 
+	 * @param msg message whose next frame is a UTF-8 encoded string
+	 * 
+	 * @return popped value
+	 */
+	static public String popString(ZMsg msg) {
+		return new String(msg.pop().getData(), Charsets.UTF_8);
 	}
 
 }

@@ -40,6 +40,7 @@ import net.imglib2.type.numeric.real.DoubleType;
 
 import org.cellprofiler.knimebridge.MockClientServerPair.RunWithBridge;
 import org.cellprofiler.knimebridge.MockClientServerPair.RunWithSockets;
+import org.cellprofiler.knimebridge.message.AbstractReply;
 import org.cellprofiler.knimebridge.message.CleanPipelineReq;
 import org.junit.Assert;
 import org.junit.Test;
@@ -100,9 +101,9 @@ public class TestKnimeBridge {
 			public void run(Socket socket) {
 				ZMsg msg = ZMsg.recvMsg(socket);
 				ZFrame client = msg.unwrap();
-				String messageType = msg.popString();
+				String messageType = AbstractReply.popString(msg);
 				assertEquals("pipeline-info-req-1", messageType);
-				String recievedPipeline = msg.popString();
+				String recievedPipeline = AbstractReply.popString(msg);
 				assertEquals(pipeline, recievedPipeline);
 				ZMsg msgOut = new ZMsg();
 				msgOut.add("pipeline-info-response-1");
@@ -485,6 +486,44 @@ public class TestKnimeBridge {
 		runMockPair(mock, client, server);
 	}
 
+	@Test
+	public void testCleanPipelineWithLF() {
+		/*
+		 * Regression test of communication problem with linefeeds
+		 * via ZMQ
+		 */
+		MockClientServerPair mock = new MockClientServerPair();
+		assertNull(mock.error);
+		final String pipelineIn = "Mary had a little lamb\nIts fleece was white as snow";
+		final String pipelineOut = "And everywhere that Mary went\nThe lamb baahed \"Ho, ho, ho\".";
+		Future<Object> client = mock.runOnClient(new RunWithBridge() {
+
+			@Override
+			public void run(IKnimeBridge bridge) {
+				try {
+					bridge.loadPipeline(pipelineIn);
+					bridge.cleanPipeline();
+					assertBridgePipelineEquals(pipelineOut, bridge);
+				} catch (PipelineException e) {
+					e.printStackTrace();
+					Assert.fail();
+				} catch (IOException e) {
+					e.printStackTrace();
+					Assert.fail();
+				} catch (ProtocolException e) {
+					e.printStackTrace();
+					Assert.fail();
+				}
+			}
+		});
+		final List<String> expectedModuleNames = Arrays.asList(
+				KBConstants.EXPORT_TO_DATABASE, KBConstants.EXPORT_TO_SPREADSHEET,
+				KBConstants.SAVE_IMAGES);
+		Future<Object> server = handleCleanPipelineReq(
+				mock, pipelineIn, pipelineOut, expectedModuleNames);
+		runMockPair(mock, client, server);
+	}
+
 	private Future<Object> handleCleanPipelineReq(
 			final MockClientServerPair mock, final String pipelineIn,
 			final String pipelineOut, final List<String> expectedModuleNames) {
@@ -494,7 +533,7 @@ public class TestKnimeBridge {
 			public void run(Socket socket) {
 				ZMsg msg = ZMsg.recvMsg(socket);
 				ZFrame client = msg.unwrap();
-				String messageType = msg.popString();
+				String messageType = AbstractReply.popString(msg);
 				if (messageType.equals("pipeline-info-req-1")) {
 					/*
 					 * Loading a pipeline - give them back something very boring
@@ -518,12 +557,12 @@ public class TestKnimeBridge {
 					msgOut.send(socket);
 					msg = ZMsg.recvMsg(socket);
 					client = msg.unwrap();
-					messageType = msg.popString();
+					messageType = AbstractReply.popString(msg);
 				}
 				assertEquals("clean-pipeline-request-1", messageType);
-				String recievedPipeline = msg.popString();
+				String recievedPipeline = AbstractReply.popString(msg);
 				assertEquals(pipelineIn, recievedPipeline);
-				final JsonReader rdr = Json.createReader(new StringReader(msg.popString()));
+				final JsonReader rdr = Json.createReader(new StringReader(AbstractReply.popString(msg)));
 				final JsonArray moduleNames = rdr.readArray();
 				assertEquals(expectedModuleNames.size(), moduleNames.size());
 				for (String expectedModuleName:expectedModuleNames) {
@@ -697,11 +736,11 @@ public class TestKnimeBridge {
 			public void run(Socket socket) {
 				ZMsg msg = ZMsg.recvMsg(socket);
 				ZFrame client = msg.unwrap();
-				String sessionID = msg.popString();
+				String sessionID = AbstractReply.popString(msg);
 				assertNotNull(sessionID);
-				String recievedPipeline = msg.popString();
+				String recievedPipeline = AbstractReply.popString(msg);
 				assertEquals(pipeline, recievedPipeline);
-				String imgMetadata = msg.popString();
+				String imgMetadata = AbstractReply.popString(msg);
 				byte [] data0 = msg.pop().getData();
 				byte [] data1 = msg.pop().getData();
 				JsonArray images = Json.createReader(new StringReader(imgMetadata)).readArray();
@@ -943,11 +982,11 @@ public class TestKnimeBridge {
 			public void run(Socket socket) {
 				ZMsg msg = ZMsg.recvMsg(socket);
 				ZFrame client = msg.unwrap();
-				String sessionID = msg.popString();
+				String sessionID = AbstractReply.popString(msg);
 				assertNotNull(sessionID);
-				String recievedPipeline = msg.popString();
+				String recievedPipeline = AbstractReply.popString(msg);
 				assertEquals(pipeline, recievedPipeline);
-				String imgMetadata = msg.popString();
+				String imgMetadata = AbstractReply.popString(msg);
 				byte [] data0 = msg.pop().getData();
 				byte [] data1 = msg.pop().getData();
 				JsonArray images = Json.createReader(new StringReader(imgMetadata)).readArray();

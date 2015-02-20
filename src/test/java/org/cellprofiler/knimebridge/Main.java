@@ -346,7 +346,26 @@ public class Main {
 		    }
 		}
 	}
-
+	private static class CleanPipelineAction extends AbstractAction {
+		final private IKnimeBridge bridge;
+		CleanPipelineAction(IKnimeBridge bridge) {
+			super("Clean pipeline");
+			this.bridge = bridge;
+		}
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			try {
+				bridge.cleanPipeline();
+			} catch (PipelineException e1) {
+				e1.printStackTrace();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			} catch (ProtocolException e1) {
+				e1.printStackTrace();
+			}
+		}
+		
+	}
 	/**
 	 * @param args - first argument is TCP address of server
 	 */
@@ -368,6 +387,8 @@ public class Main {
 		Container panel = frame.getContentPane();
 		JButton load_pipeline_button = new JButton(new LoadPipelineAction("Load pipeline", frame, bridge));
 		panel.add(load_pipeline_button, BorderLayout.LINE_START);
+		JButton clean_pipeline_button = new JButton(new CleanPipelineAction(bridge));
+		panel.add(clean_pipeline_button);
 		JButton run_pipeline_button = new JButton(new RunAction("Run", frame, bridge));
 		panel.add(run_pipeline_button,  BorderLayout.LINE_END);
 		frame.pack();
