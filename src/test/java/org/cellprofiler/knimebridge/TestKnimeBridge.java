@@ -520,7 +520,7 @@ public class TestKnimeBridge {
 					client = msg.unwrap();
 					messageType = msg.popString();
 				}
-				assertEquals("clean-pipeline-req-1", messageType);
+				assertEquals("clean-pipeline-request-1", messageType);
 				String recievedPipeline = msg.popString();
 				assertEquals(pipelineIn, recievedPipeline);
 				final JsonReader rdr = Json.createReader(new StringReader(msg.popString()));
