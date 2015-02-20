@@ -19,7 +19,7 @@ import org.zeromq.ZMQ.Socket;
  *
  */
 public class CleanPipelineReq extends ZMsg{
-	private static final String msgName = "clean-pipeline-request-1";
+	private static final String msgName = "clean-pipeline-req-1";
 	
 	/**
 	 * Create a CleanPipelineReq wrapping the given pipeline text
