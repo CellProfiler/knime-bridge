@@ -6,10 +6,11 @@
  */
 package org.cellprofiler.knimebridge.message;
 
+import java.io.UnsupportedEncodingException;
+
 import org.cellprofiler.knimebridge.CellProfilerException;
 import org.cellprofiler.knimebridge.PipelineException;
 import org.cellprofiler.knimebridge.ProtocolException;
-import org.python.google.common.base.Charsets;
 import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
 
@@ -100,7 +101,12 @@ public abstract class AbstractReply {
 	 * @return popped value
 	 */
 	static public String popString(ZMsg msg) {
-		return new String(msg.pop().getData(), Charsets.UTF_8);
+		try {
+			return new String(msg.pop().getData(), "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+			throw new AssertionError("UTF-8 encoding not supported");
+		}
 	}
 
 }

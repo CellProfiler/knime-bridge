@@ -346,6 +346,7 @@ public class Main {
 		    }
 		}
 	}
+	@SuppressWarnings("serial")
 	private static class CleanPipelineAction extends AbstractAction {
 		final private IKnimeBridge bridge;
 		CleanPipelineAction(IKnimeBridge bridge) {
